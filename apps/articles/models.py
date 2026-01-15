@@ -19,7 +19,16 @@ class Article(models.Model):
         ('premium', 'Premium Üyeler'),
         ('subscriber_only', 'Sadece Aboneler'),
     ]
-    
+
+    ARTICLE_TYPE_CHOICES = [
+        ('news', 'Haber'),
+        ('column', 'Köşe Yazısı'),
+        ('analysis', 'Analiz'),
+        ('interview', 'Röportaj'),
+        ('report', 'Özel Rapor'),
+        ('opinion', 'Yorum'),
+    ]
+
     title = models.CharField(max_length=255, verbose_name='Başlık')
     slug = models.SlugField(max_length=255, unique=True, verbose_name='Slug')
     subtitle = models.CharField(max_length=255, blank=True, verbose_name='Alt Başlık')
@@ -43,7 +52,8 @@ class Article(models.Model):
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft', verbose_name='Durum')
     visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES, default='public', verbose_name='Görünürlük')
-    
+    article_type = models.CharField(max_length=20, choices=ARTICLE_TYPE_CHOICES, default='news', verbose_name='Makale Tipi', db_index=True)
+
     is_featured = models.BooleanField(default=False, verbose_name='Manşet')
     is_breaking = models.BooleanField(default=False, verbose_name='Son Dakika')
     is_trending = models.BooleanField(default=False, verbose_name='Gündemde')

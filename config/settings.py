@@ -107,11 +107,26 @@ REST_AUTH = {
 # Database
 DATABASES = {
     'default': dj_database_url.config(
-        default=config('DATABASE_URL', default='mysql://root:password@localhost:3306/news_db'),
-        conn_max_age=600,
-        conn_health_checks=True,
+        default=config('DATABASE_URL', default='postgresql://postgres:postgres@localhost:5432/news_db'),
+        conn_max_age=600,  # Connection persistent for 10 minutes
+        conn_health_checks=True,  # Check connection health before reusing
     )
 }
+
+# Database connection pool optimization for high traffic
+# These settings are applied when using PostgreSQL
+if 'postgresql' in DATABASES['default']['ENGINE'] or 'psycopg2' in DATABASES['default']['ENGINE']:
+    DATABASES['default']['OPTIONS'] = {
+        'connect_timeout': 10,  # Connection timeout in seconds
+        'options': '-c statement_timeout=30000',  # Query timeout: 30 seconds
+    }
+
+# Database pool size (for production with connection pooling like PgBouncer)
+# Adjust based on your server resources:
+# Formula: (CPU cores * 2) + effective_spindle_count
+# For 4 cores: (4 * 2) + 1 = 9, but we set higher for web servers
+DATABASE_POOL_SIZE = config('DATABASE_POOL_SIZE', default=20, cast=int)
+DATABASE_MAX_OVERFLOW = config('DATABASE_MAX_OVERFLOW', default=30, cast=int)
 
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.CustomUser'
@@ -272,8 +287,46 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
-CELERY_WORKER_PREFETCH_MULTIPLIER = 4
-CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
+CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 minutes (soft limit before hard limit)
+
+# Worker optimization for high traffic
+CELERY_WORKER_PREFETCH_MULTIPLIER = 4  # Number of tasks to prefetch per worker
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000  # Restart worker after 1000 tasks (prevent memory leaks)
+CELERY_WORKER_DISABLE_RATE_LIMITS = False  # Enable rate limiting if needed
+
+# Connection pool settings for Redis
+CELERY_BROKER_POOL_LIMIT = 50  # Maximum number of connections in the pool
+CELERY_BROKER_CONNECTION_RETRY = True
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BROKER_CONNECTION_MAX_RETRIES = 10
+
+# Result backend optimization
+CELERY_RESULT_EXPIRES = 3600  # Results expire after 1 hour
+CELERY_RESULT_BACKEND_MAX_RETRIES = 10
+CELERY_RESULT_PERSISTENT = True  # Persist results to disk
+
+# Task execution optimization
+CELERY_TASK_ACKS_LATE = True  # Acknowledge tasks after completion (safer for crashes)
+CELERY_TASK_REJECT_ON_WORKER_LOST = True  # Reject tasks if worker dies
+CELERY_TASK_IGNORE_RESULT = False  # Store task results
+
+# Task routing (route heavy tasks to dedicated queues)
+CELERY_TASK_ROUTES = {
+    'apps.analytics.tasks.record_article_view': {'queue': 'high_priority'},  # Fast tracking
+    'apps.analytics.tasks.update_popular_articles': {'queue': 'low_priority'},  # Background job
+    'apps.analytics.tasks.cleanup_old_views': {'queue': 'low_priority'},
+    'apps.newsletter.tasks.*': {'queue': 'low_priority'},  # Newsletter tasks
+}
+
+# Queue definitions
+CELERY_TASK_DEFAULT_QUEUE = 'default'
+CELERY_TASK_DEFAULT_EXCHANGE = 'default'
+CELERY_TASK_DEFAULT_ROUTING_KEY = 'default'
+
+# Performance: Use gevent pool for I/O-bound tasks (like view tracking)
+# Start workers with: celery -A config worker -P gevent -c 100
+# -P gevent: Use gevent pool
+# -c 100: 100 concurrent greenlets (adjust based on server resources)
 
 # Celery Beat Schedule
 from celery.schedules import crontab

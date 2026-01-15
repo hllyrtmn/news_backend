@@ -4,11 +4,71 @@ Celery tasks for analytics application.
 
 from celery import shared_task
 from django.utils import timezone
-from django.db.models import Count, Sum, Avg
+from django.db.models import Count, Sum, Avg, F
 from datetime import timedelta
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+@shared_task(bind=True, max_retries=3)
+def record_article_view(self, article_id, user_id=None, ip_address=None, user_agent=''):
+    """
+    Asynchronously record an article view.
+    This prevents blocking the main request/response cycle.
+
+    Args:
+        article_id: ID of the article being viewed
+        user_id: ID of the user (if authenticated)
+        ip_address: IP address of the viewer
+        user_agent: User agent string
+    """
+    try:
+        from apps.articles.models import Article
+        from .models import ArticleView
+        from django.contrib.auth import get_user_model
+        from datetime import timedelta
+
+        User = get_user_model()
+
+        # Get the article
+        article = Article.objects.get(id=article_id)
+
+        # Check if this IP has viewed this article in the last 24 hours
+        time_threshold = timezone.now() - timedelta(hours=24)
+        has_viewed = ArticleView.objects.filter(
+            article=article,
+            ip_address=ip_address,
+            viewed_at__gte=time_threshold
+        ).exists()
+
+        if not has_viewed:
+            # Increment view count (atomic operation to prevent race conditions)
+            Article.objects.filter(id=article_id).update(views_count=F('views_count') + 1)
+
+            # Create analytics record
+            user = User.objects.get(id=user_id) if user_id else None
+            ArticleView.objects.create(
+                article=article,
+                user=user,
+                ip_address=ip_address,
+                user_agent=user_agent[:255]
+            )
+
+            logger.info(f"Recorded view for article {article_id} from IP {ip_address}")
+            return f"View recorded for article {article_id}"
+        else:
+            logger.debug(f"Duplicate view ignored for article {article_id} from IP {ip_address}")
+            return f"Duplicate view ignored for article {article_id}"
+
+    except Article.DoesNotExist:
+        logger.error(f"Article {article_id} not found")
+        return f"Article {article_id} not found"
+
+    except Exception as exc:
+        logger.error(f"Error recording view for article {article_id}: {str(exc)}")
+        # Retry with exponential backoff
+        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
 
 
 @shared_task(bind=True, max_retries=3)

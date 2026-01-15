@@ -35,12 +35,15 @@ services:
 
   celery:
     build: .
-    command: celery -A config worker -l info
+    command: celery -A config worker -P gevent -c 100 -l info --queues=default,high_priority,low_priority
     volumes:
       - .:/app
     depends_on:
       - db
       - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
 
   celery-beat:
     build: .

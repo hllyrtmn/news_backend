@@ -14,11 +14,11 @@ class ArticleListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Article
         fields = [
-            'id', 'title', 'slug', 'subtitle', 'summary', 
+            'id', 'title', 'slug', 'subtitle', 'summary',
             'category', 'author', 'tags',
-            'featured_image', 'status', 'visibility',
+            'featured_image', 'status', 'visibility', 'article_type',
             'is_featured', 'is_breaking', 'is_trending',
-            'views_count', 'read_time', 'comment_count',  # ← BU SATIRI EKLEYİN
+            'views_count', 'read_time', 'comment_count',
             'published_at', 'created_at', 'updated_at',
             'has_video', 'video_url', 'video_thumbnail',
         ]
@@ -91,6 +91,6 @@ class ArticleCreateUpdateSerializer(serializers.ModelSerializer):
         fields = (
             'title', 'subtitle', 'summary', 'content', 'author', 'co_authors',
             'category', 'tags', 'featured_image', 'gallery', 'status',
-            'visibility', 'is_featured', 'is_breaking', 'published_at',
+            'visibility', 'article_type', 'is_featured', 'is_breaking', 'published_at',
             'meta_title', 'meta_description', 'meta_keywords'
         )

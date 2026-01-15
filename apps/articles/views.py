@@ -6,6 +6,8 @@ from django.db.models import Q, F
 from django.utils import timezone
 from django.core.cache import cache
 from django.conf import settings
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from drf_spectacular.utils import extend_schema
 from utils.permissions import IsAuthorOrReadOnly, IsAuthorEditorOrAdmin
 from utils.pagination import ArticlePagination
@@ -79,37 +81,25 @@ class ArticleViewSet(viewsets.ModelViewSet):
     @extend_schema(summary="Haber Detayı", description="Belirli bir haberin detaylarını döndürür")
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        
-        # IP Adresini Al
+
+        # Asynchronously record article view using Celery
+        # This prevents blocking the main request/response cycle
+        from apps.analytics.tasks import record_article_view
+
+        # Get client information
         ip_address = get_client_ip(request)
-        
-        # Analitik Modeli ve Zaman Araçlarını İçe Aktar
-        from apps.analytics.models import ArticleView
-        from django.utils import timezone
-        from datetime import timedelta
-        
-        # Son 24 saat kontrolü (Süreyi isteğinize göre değiştirebilirsiniz)
-        time_threshold = timezone.now() - timedelta(hours=24)
-        
-        # Bu IP adresi bu haberi son 24 saatte görmüş mü?
-        has_viewed = ArticleView.objects.filter(
-            article=instance,
+        user_id = request.user.id if request.user.is_authenticated else None
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
+
+        # Send to Celery task queue (non-blocking)
+        record_article_view.delay(
+            article_id=instance.id,
+            user_id=user_id,
             ip_address=ip_address,
-            viewed_at__gte=time_threshold
-        ).exists()
-        
-        if not has_viewed:
-            # Görüntülenme sayısını artır (Sadece yeni izlenmeyse)
-            instance.increment_views()
-            
-            # Analitik kaydı oluştur
-            ArticleView.objects.create(
-                article=instance,
-                user=request.user if request.user.is_authenticated else None,
-                ip_address=ip_address,
-                user_agent=request.META.get('HTTP_USER_AGENT', '')[:255]
-            )
-        
+            user_agent=user_agent
+        )
+
+        # Immediately return response (don't wait for view tracking to complete)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
     
@@ -130,6 +120,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
+    @method_decorator(cache_page(60 * 5))  # 5 dakika cache
     @extend_schema(summary="Öne Çıkan Haberler")
     def featured(self, request):
         """
@@ -153,6 +144,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
+    @method_decorator(cache_page(60 * 2))  # 2 dakika cache (son dakika daha hızlı güncellenmeli)
     @extend_schema(summary="Son Dakika Haberleri")
     def breaking(self, request):
         """
@@ -176,6 +168,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
+    @method_decorator(cache_page(60 * 10))  # 10 dakika cache
     @extend_schema(summary="Popüler Haberler")
     def popular(self, request):
         """
@@ -218,13 +211,14 @@ class ArticleViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
+    @method_decorator(cache_page(60 * 5))  # 5 dakika cache
     @extend_schema(summary="Trend Haberler")
     def trending(self, request):
         """
         Trending haberler
-        
+
         GET /articles/trending/
-        
+
         Returns: List of trending articles
         """
         trending_articles = Article.objects.filter(
@@ -236,7 +230,52 @@ class ArticleViewSet(viewsets.ModelViewSet):
         ).prefetch_related(
             'tags'
         ).order_by('-views_count')[:10]
-        
+
         serializer = self.get_serializer(trending_articles, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    @method_decorator(cache_page(60 * 10))  # 10 dakika cache
+    @extend_schema(summary="Köşe Yazıları", description="Köşe yazılarını listeler")
+    def columns(self, request):
+        """
+        Köşe yazıları
+
+        GET /articles/columns/
+
+        Query Parameters:
+        - author: Yazar slug'ı (örn: ahmet-yazar)
+        - category: Kategori slug'ı (örn: gundem)
+
+        Returns: List of column articles
+        """
+        columns = Article.objects.filter(
+            status='published',
+            article_type='column'
+        ).select_related(
+            'author',
+            'author__user',
+            'category'
+        ).prefetch_related(
+            'tags'
+        ).order_by('-published_at')
+
+        # Optional filtering by author
+        author_slug = request.query_params.get('author')
+        if author_slug:
+            columns = columns.filter(author__slug=author_slug)
+
+        # Optional filtering by category
+        category_slug = request.query_params.get('category')
+        if category_slug:
+            columns = columns.filter(category__slug=category_slug)
+
+        # Paginate
+        page = self.paginate_queryset(columns)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(columns, many=True)
         return Response(serializer.data)
 

@@ -7,11 +7,12 @@ class ArticleFilter(filters.FilterSet):
     tag = filters.CharFilter(field_name='tags__slug')
     author = filters.CharFilter(field_name='author__slug')
     status = filters.ChoiceFilter(choices=Article.STATUS_CHOICES)
+    article_type = filters.ChoiceFilter(choices=Article.ARTICLE_TYPE_CHOICES)
     is_featured = filters.BooleanFilter()
     is_breaking = filters.BooleanFilter()
     published_after = filters.DateTimeFilter(field_name='published_at', lookup_expr='gte')
     published_before = filters.DateTimeFilter(field_name='published_at', lookup_expr='lte')
-    
+
     class Meta:
         model = Article
-        fields = ['title', 'category', 'tag', 'author', 'status', 'is_featured', 'is_breaking']
+        fields = ['title', 'category', 'tag', 'author', 'status', 'article_type', 'is_featured', 'is_breaking']
