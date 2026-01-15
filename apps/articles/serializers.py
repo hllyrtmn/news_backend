@@ -77,7 +77,9 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     
     def get_comment_count(self, obj):
         """Get approved comments count for the article."""
-        return obj.comments.filter(is_approved=True).count() if hasattr(obj, 'comments') else 0
+        if hasattr(obj, 'comments'):
+            return obj.comments.filter(status='approved').count() 
+        return 0
     
     def get_related_articles(self, obj):
         """Get related articles."""
