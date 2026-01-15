@@ -24,14 +24,30 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/app
-    ports:
-      - "8000:8000"
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    expose:
+      - "8000"
     depends_on:
       - db
       - redis
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/news_db
       - REDIS_URL=redis://redis:6379/0
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - nginx_cache:/var/cache/nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - web
+    restart: unless-stopped
 
   celery:
     build: .
@@ -57,3 +73,6 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  static_volume:
+  media_volume:
+  nginx_cache:

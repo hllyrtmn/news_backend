@@ -1,0 +1,71 @@
+# Multi-stage Dockerfile for Production
+# Optimized for security, size, and performance
+
+###############################################
+# Stage 1: Builder (Build dependencies)
+###############################################
+FROM python:3.11-slim as builder
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
+
+###############################################
+# Stage 2: Runtime (Production)
+###############################################
+FROM python:3.11-slim
+
+# Create non-root user for security
+RUN groupadd -r django && useradd -r -g django django
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/home/django/.local/bin:$PATH"
+
+WORKDIR /app
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    postgresql-client \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Python wheels from builder stage
+COPY --from=builder /app/wheels /wheels
+RUN pip install --no-cache /wheels/* && rm -rf /wheels
+
+# Copy application code
+COPY --chown=django:django . .
+
+# Create directories for static and media files
+RUN mkdir -p /app/staticfiles /app/media && \
+    chown -R django:django /app/staticfiles /app/media
+
+# Collect static files (run as django user)
+USER django
+RUN python manage.py collectstatic --no-input --clear
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/core/health/ || exit 1
+
+EXPOSE 8000
+
+# Use gunicorn with configuration file
+CMD ["gunicorn", "-c", "gunicorn.conf.py", "config.wsgi:application"]

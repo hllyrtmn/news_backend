@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from utils.permissions import CanModerateComments
 from utils.pagination import CommentPagination
 from utils.helpers import get_client_ip
+from utils.throttling import CommentRateThrottle
 from .models import Comment, CommentLike
 from .serializers import CommentSerializer
 
@@ -13,6 +14,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
     pagination_class = CommentPagination
+    throttle_classes = [CommentRateThrottle]  # Rate limiting for comments
     
     def perform_create(self, serializer):
         serializer.save(

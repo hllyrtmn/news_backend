@@ -32,6 +32,8 @@ db.sqlite3-journal
 
 # Environment
 .env
+.env.prod
+.env.local
 .venv
 env/
 venv/
@@ -52,6 +54,9 @@ Thumbs.db
 
 # Celery
 celerybeat-schedule
+celerybeat-schedule.dat
+celerybeat-schedule.dir
+celerybeat-schedule.bak
 celerybeat.pid
 
 # Coverage

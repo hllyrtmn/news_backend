@@ -214,9 +214,25 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '10000/hour',
-        'user': '100000/hour',
-        'burst': '60/min',      # Dakikada 60 istek (Geliştirme için ideal)
+        # Anonymous users (not logged in)
+        'anon': '100/hour',           # General API access
+
+        # Authenticated users
+        'user': '1000/hour',          # General API access
+        'burst': '30/min',            # Short burst protection
+        'sustained': '500/hour',      # Long-term limit
+
+        # Specific endpoints
+        'comment': '10/hour',         # Comment creation (prevent spam)
+        'auth': '20/hour',            # Login/register attempts
+        'read': '300/hour',           # Read-only endpoints (relaxed)
+        'write': '50/hour',           # Write operations
+
+        # Premium users (higher limits)
+        'premium': '5000/hour',       # Premium/subscriber users
+
+        # Admin (no limits in practice, but set high)
+        'admin': '100000/hour',       # Admin/staff users
     },
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'EXCEPTION_HANDLER': 'utils.exception_handler.custom_exception_handler',
