@@ -22,39 +22,49 @@ export class AppComponent implements OnInit {
     // Initialize auth state
     this.authService.loadUserFromStorage();
 
-    // Connect to WebSocket services if authenticated
-    this.authService.currentUser$.subscribe(user => {
-      if (user) {
-        // Connect to notification WebSocket (requires auth)
-        this.notificationWs.connect();
+    // TODO: WebSocket için backend'de Daphne kullanman gerekiyor!
+    // python manage.py runserver yerine:
+    // daphne -b 0.0.0.0 -p 8000 config.asgi:application
 
-        // Listen for notifications
-        this.notificationWs.messages$.subscribe(message => {
-          if (message.type === 'notification') {
-            console.log('New notification:', message.notification);
-            // You can show a toast notification here
-          }
-        });
+    // WebSocket bağlantılarını geçici olarak kapat (development için)
+    // Production'da aktif et!
+    const ENABLE_WEBSOCKET = false;
 
-        // Get unread count
-        this.notificationWs.unreadCount$.subscribe(count => {
-          console.log('Unread notifications:', count);
-        });
-      } else {
-        // Disconnect from notification WebSocket when logged out
-        this.notificationWs.disconnect();
-      }
-    });
+    if (ENABLE_WEBSOCKET) {
+      // Connect to WebSocket services if authenticated
+      this.authService.currentUser$.subscribe(user => {
+        if (user) {
+          // Connect to notification WebSocket (requires auth)
+          this.notificationWs.connect();
 
-    // Always connect to breaking news WebSocket (public)
-    this.breakingNewsWs.connect();
+          // Listen for notifications
+          this.notificationWs.messages$.subscribe(message => {
+            if (message.type === 'notification') {
+              console.log('New notification:', message.notification);
+              // You can show a toast notification here
+            }
+          });
 
-    // Listen for breaking news
-    this.breakingNewsWs.messages$.subscribe(message => {
-      if (message.type === 'breaking_news') {
-        console.log('Breaking news:', message.article);
-        // You can show a prominent notification banner here
-      }
-    });
+          // Get unread count
+          this.notificationWs.unreadCount$.subscribe(count => {
+            console.log('Unread notifications:', count);
+          });
+        } else {
+          // Disconnect from notification WebSocket when logged out
+          this.notificationWs.disconnect();
+        }
+      });
+
+      // Always connect to breaking news WebSocket (public)
+      this.breakingNewsWs.connect();
+
+      // Listen for breaking news
+      this.breakingNewsWs.messages$.subscribe(message => {
+        if (message.type === 'breaking_news') {
+          console.log('Breaking news:', message.article);
+          // You can show a prominent notification banner here
+        }
+      });
+    }
   }
 }
