@@ -23,7 +23,9 @@ export class SocialAuthService {
     if (typeof google !== 'undefined') {
       google.accounts.id.initialize({
         client_id: environment.googleClientId,
-        callback: this.handleGoogleCallback.bind(this)
+        callback: this.handleGoogleCallback.bind(this),
+        use_fedcm_for_prompt: false, // <-- BURAYI EKLE: FedCM hatasını devre dışı bırakır
+        itp_support: true            // Akıllı Takip Koruması desteği (Safari için)
       });
     }
   }
