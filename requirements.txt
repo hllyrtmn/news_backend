@@ -110,3 +110,5 @@ webencodings==0.5.1
 whitenoise==6.11.0
 zope.event==6.1
 zope.interface==8.2
+pyotp==2.9.0
+qrcode[pil]==7.4.2
