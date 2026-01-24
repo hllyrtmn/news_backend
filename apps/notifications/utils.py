@@ -1,5 +1,45 @@
 from .models import Notification, NotificationPreference
 from django.contrib.contenttypes.models import ContentType
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
+
+def send_realtime_notification(user_id, notification_data):
+    """
+    Send real-time notification via WebSocket
+    """
+    try:
+        channel_layer = get_channel_layer()
+        room_group_name = f'notifications_user_{user_id}'
+
+        async_to_sync(channel_layer.group_send)(
+            room_group_name,
+            {
+                'type': 'notification_message',
+                'notification': notification_data
+            }
+        )
+    except Exception as e:
+        # Log error but don't fail if WebSocket is not available
+        print(f"WebSocket notification failed: {str(e)}")
+
+
+def send_breaking_news_alert(article_data):
+    """
+    Send breaking news alert to all connected clients
+    """
+    try:
+        channel_layer = get_channel_layer()
+
+        async_to_sync(channel_layer.group_send)(
+            'breaking_news',
+            {
+                'type': 'breaking_news_alert',
+                'article': article_data
+            }
+        )
+    except Exception as e:
+        print(f"Breaking news alert failed: {str(e)}")
 
 
 def create_notification(recipient, sender, notification_type, title, message, link='', content_object=None):
@@ -49,8 +89,17 @@ def create_notification(recipient, sender, notification_type, title, message, li
         object_id=object_id
     )
 
-    # TODO: WebSocket ile gerçek zamanlı bildirim gönder
-    # send_realtime_notification(recipient.id, notification)
+    # WebSocket ile gerçek zamanlı bildirim gönder
+    notification_data = {
+        'id': notification.id,
+        'type': notification_type,
+        'title': title,
+        'message': message,
+        'link': link,
+        'sender': sender.username if sender else None,
+        'created_at': notification.created_at.isoformat()
+    }
+    send_realtime_notification(recipient.id, notification_data)
 
     # TODO: Email bildirimi gönder (eğer kullanıcı tercih ediyorsa)
     # send_email_notification(recipient, notification, preferences)

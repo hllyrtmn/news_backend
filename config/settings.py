@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'drf_spectacular_sidecar',
     'django_celery_beat',
+    'channels',  # Django Channels for WebSocket
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
@@ -514,3 +515,24 @@ FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
 ARTICLES_PER_PAGE = 20
 COMMENTS_PER_PAGE = 10
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+
+# Django Channels (WebSocket) Configuration
+ASGI_APPLICATION = 'config.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [config('REDIS_URL', default='redis://127.0.0.1:6379/2')],
+            "capacity": 1500,  # Maximum number of messages to store
+            "expiry": 10,  # Message expiry time in seconds
+        },
+    },
+}
+
+# For development/testing without Redis
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels.layers.InMemoryChannelLayer"
+#     }
+# }
