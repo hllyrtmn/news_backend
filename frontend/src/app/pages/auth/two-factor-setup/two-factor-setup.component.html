@@ -1,0 +1,244 @@
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-2xl w-full space-y-8">
+    <!-- Header -->
+    <div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        İki Faktörlü Doğrulama Kurulumu
+      </h2>
+      <p class="mt-2 text-center text-sm text-gray-600">
+        Hesabınızın güvenliğini artırın
+      </p>
+    </div>
+
+    <!-- Progress Steps -->
+    <div class="flex items-center justify-center space-x-4">
+      <div class="flex items-center">
+        <div class="flex items-center justify-center w-10 h-10 rounded-full"
+             [class.bg-indigo-600]="currentStep() !== 'setup'"
+             [class.bg-gray-300]="currentStep() === 'setup'">
+          @if (currentStep() !== 'setup') {
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+          } @else {
+            <span class="text-white font-semibold">1</span>
+          }
+        </div>
+        <span class="ml-2 text-sm font-medium text-gray-900">QR Kod</span>
+      </div>
+
+      <div class="w-16 h-1 bg-gray-300"
+           [class.bg-indigo-600]="currentStep() === 'backup' || currentStep() === 'complete'"></div>
+
+      <div class="flex items-center">
+        <div class="flex items-center justify-center w-10 h-10 rounded-full"
+             [class.bg-indigo-600]="currentStep() === 'backup' || currentStep() === 'complete'"
+             [class.bg-gray-300]="currentStep() !== 'backup' && currentStep() !== 'complete'">
+          @if (currentStep() === 'complete') {
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+          } @else {
+            <span class="text-white font-semibold">2</span>
+          }
+        </div>
+        <span class="ml-2 text-sm font-medium text-gray-900">Yedek Kodlar</span>
+      </div>
+
+      <div class="w-16 h-1 bg-gray-300"
+           [class.bg-indigo-600]="currentStep() === 'complete'"></div>
+
+      <div class="flex items-center">
+        <div class="flex items-center justify-center w-10 h-10 rounded-full"
+             [class.bg-indigo-600]="currentStep() === 'complete'"
+             [class.bg-gray-300]="currentStep() !== 'complete'">
+          <span class="text-white font-semibold">3</span>
+        </div>
+        <span class="ml-2 text-sm font-medium text-gray-900">Tamamlandı</span>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    @if (error()) {
+      <div class="rounded-md bg-red-50 p-4">
+        <div class="flex">
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800">{{ error() }}</h3>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Step 1: QR Code & Verify -->
+    @if (currentStep() === 'verify') {
+      <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+          <div class="text-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+              1. Authenticator Uygulamanızı Açın
+            </h3>
+            <p class="text-sm text-gray-600 mb-6">
+              Google Authenticator, Authy veya benzeri bir uygulama kullanarak aşağıdaki QR kodu tarayın.
+            </p>
+
+            <!-- QR Code -->
+            @if (qrCodeData) {
+              <div class="flex justify-center mb-6">
+                <img [src]="qrCodeData" alt="QR Code" class="w-64 h-64 border-2 border-gray-300 rounded-lg" />
+              </div>
+            }
+
+            <!-- Manual Entry -->
+            <div class="mb-6">
+              <p class="text-sm text-gray-600 mb-2">Manuel giriş için gizli anahtar:</p>
+              <div class="flex items-center justify-center space-x-2">
+                <code class="px-4 py-2 bg-gray-100 rounded font-mono text-sm">{{ secretKey }}</code>
+                <button
+                  type="button"
+                  (click)="copyToClipboard(secretKey)"
+                  class="p-2 text-gray-400 hover:text-gray-600"
+                  title="Kopyala"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+              2. Doğrulama Kodunu Girin
+            </h3>
+            <p class="text-sm text-gray-600 mb-6">
+              Authenticator uygulamanızda görünen 6 haneli kodu girin.
+            </p>
+
+            <!-- Verify Form -->
+            <form [formGroup]="verifyForm" (ngSubmit)="onVerify()" class="max-w-xs mx-auto">
+              <input
+                type="text"
+                formControlName="code"
+                maxlength="6"
+                class="block w-full px-4 py-3 text-center text-2xl font-mono border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="000000"
+              />
+              <button
+                type="submit"
+                [disabled]="verifyForm.invalid || loading()"
+                class="mt-4 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                @if (loading()) {
+                  <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                } @else {
+                  Doğrula
+                }
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Step 2: Backup Codes -->
+    @if (currentStep() === 'backup') {
+      <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+          <div class="text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+              <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+              2FA Başarıyla Etkinleştirildi!
+            </h3>
+            <p class="text-sm text-gray-600 mb-6">
+              Aşağıdaki yedek kodları güvenli bir yere kaydedin. Telefonunuzu kaybettiğinizde bu kodları kullanarak giriş yapabilirsiniz.
+            </p>
+
+            <!-- Backup Codes -->
+            <div class="bg-gray-50 rounded-lg p-6 mb-6">
+              <div class="grid grid-cols-2 gap-4">
+                @for (code of backupCodes; track code) {
+                  <div class="font-mono text-sm bg-white px-4 py-2 rounded border border-gray-200">
+                    {{ code }}
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="flex items-center justify-center space-x-4">
+              <button
+                type="button"
+                (click)="copyBackupCodes()"
+                class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                @if (backupCodesCopied()) {
+                  Kopyalandı!
+                } @else {
+                  Kodları Kopyala
+                }
+              </button>
+
+              <button
+                type="button"
+                (click)="finish()"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Tamamla
+              </button>
+            </div>
+
+            <div class="mt-4 p-4 bg-yellow-50 rounded-md">
+              <p class="text-sm text-yellow-800">
+                <strong>Önemli:</strong> Her kod sadece bir kez kullanılabilir. Kodları güvenli bir yerde saklayın ve kimseyle paylaşmayın.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Step 3: Complete -->
+    @if (currentStep() === 'complete') {
+      <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+          <div class="text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+              <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+              Kurulum Tamamlandı!
+            </h3>
+            <p class="text-sm text-gray-600 mb-6">
+              Hesabınız artık iki faktörlü doğrulama ile korunuyor. Ana sayfaya yönlendiriliyorsunuz...
+            </p>
+            <div class="flex justify-center">
+              <svg class="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Cancel Button -->
+    @if (currentStep() !== 'complete') {
+      <div class="text-center">
+        <a routerLink="/" class="text-sm text-gray-600 hover:text-gray-900">
+          İptal et ve ana sayfaya dön
+        </a>
+      </div>
+    }
+  </div>
+</div>
