@@ -65,23 +65,6 @@
           }
         </div>
 
-        <!-- Username -->
-        <div>
-          <label for="username" class="block text-sm font-medium text-gray-700">Kullanıcı Adı</label>
-          <input
-            id="username"
-            type="text"
-            formControlName="username"
-            required
-            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-            [class.border-red-500]="registerForm.get('username')?.invalid && registerForm.get('username')?.touched"
-            placeholder="kullanici_adi"
-          />
-          @if (registerForm.get('username')?.invalid && registerForm.get('username')?.touched) {
-            <p class="mt-1 text-xs text-red-600">Kullanıcı adı en az 3 karakter olmalı</p>
-          }
-        </div>
-
         <!-- First Name -->
         <div>
           <label for="first_name" class="block text-sm font-medium text-gray-700">Ad</label>
@@ -110,15 +93,15 @@
 
         <!-- Password -->
         <div>
-          <label for="password" class="block text-sm font-medium text-gray-700">Şifre</label>
+          <label for="password1" class="block text-sm font-medium text-gray-700">Şifre</label>
           <div class="mt-1 relative">
             <input
-              id="password"
+              id="password1"
               [type]="showPassword() ? 'text' : 'password'"
-              formControlName="password"
+              formControlName="password1"
               required
               class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              [class.border-red-500]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
+              [class.border-red-500]="registerForm.get('password1')?.invalid && registerForm.get('password1')?.touched"
               placeholder="••••••••"
             />
             <button
@@ -138,19 +121,19 @@
               }
             </button>
           </div>
-          @if (registerForm.get('password')?.invalid && registerForm.get('password')?.touched) {
+          @if (registerForm.get('password1')?.invalid && registerForm.get('password1')?.touched) {
             <p class="mt-1 text-xs text-red-600">Şifre en az 8 karakter olmalı</p>
           }
         </div>
 
         <!-- Confirm Password -->
         <div>
-          <label for="confirmPassword" class="block text-sm font-medium text-gray-700">Şifre Tekrar</label>
+          <label for="password2" class="block text-sm font-medium text-gray-700">Şifre Tekrar</label>
           <div class="mt-1 relative">
             <input
-              id="confirmPassword"
+              id="password2"
               [type]="showConfirmPassword() ? 'text' : 'password'"
-              formControlName="confirmPassword"
+              formControlName="password2"
               required
               class="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
               [class.border-red-500]="passwordMismatch"

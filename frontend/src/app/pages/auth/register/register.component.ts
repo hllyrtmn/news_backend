@@ -26,11 +26,10 @@ export class RegisterComponent implements OnInit {
   ngOnInit(): void {
     this.registerForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      username: ['', [Validators.required, Validators.minLength(3)]],
       first_name: ['', [Validators.required]],
       last_name: ['', [Validators.required]],
-      password: ['', [Validators.required, Validators.minLength(8)]],
-      confirmPassword: ['', [Validators.required]]
+      password1: ['', [Validators.required, Validators.minLength(8)]],
+      password2: ['', [Validators.required]]
     }, {
       validators: this.passwordMatchValidator
     });
@@ -38,14 +37,14 @@ export class RegisterComponent implements OnInit {
 
   // Custom validator to check if passwords match
   passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
-    const password = control.get('password');
-    const confirmPassword = control.get('confirmPassword');
+    const password1 = control.get('password1');
+    const password2 = control.get('password2');
 
-    if (!password || !confirmPassword) {
+    if (!password1 || !password2) {
       return null;
     }
 
-    return password.value === confirmPassword.value ? null : { passwordMismatch: true };
+    return password1.value === password2.value ? null : { passwordMismatch: true };
   }
 
   onSubmit(): void {
@@ -56,7 +55,8 @@ export class RegisterComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    const { confirmPassword, ...registerData } = this.registerForm.value;
+    // Tüm form değerlerini doğrudan gönder (backend formatıyla uyumlu)
+    const registerData = this.registerForm.value;
 
     this.authService.register(registerData).subscribe({
       next: (response) => {
@@ -95,6 +95,6 @@ export class RegisterComponent implements OnInit {
 
   get passwordMismatch(): boolean {
     return this.registerForm.hasError('passwordMismatch') &&
-           this.registerForm.get('confirmPassword')?.touched || false;
+           this.registerForm.get('password2')?.touched || false;
   }
 }
