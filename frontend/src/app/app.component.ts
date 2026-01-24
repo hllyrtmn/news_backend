@@ -28,7 +28,7 @@ export class AppComponent implements OnInit {
 
     // WebSocket bağlantılarını geçici olarak kapat (development için)
     // Production'da aktif et!
-    const ENABLE_WEBSOCKET = false;
+    const ENABLE_WEBSOCKET = true;
 
     if (ENABLE_WEBSOCKET) {
       // Connect to WebSocket services if authenticated

@@ -5,7 +5,7 @@ export const environment = {
   wsUrl: 'ws://localhost:8000/ws',
 
   // Social OAuth
-  googleClientId: 'YOUR_GOOGLE_CLIENT_ID',
+  googleClientId: '678186651494-fre1frg26kba2eau0kpd0su6clli57tv.apps.googleusercontent.com',
   facebookAppId: 'YOUR_FACEBOOK_APP_ID',
 
   // App settings
