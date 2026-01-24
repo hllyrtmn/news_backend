@@ -17,8 +17,11 @@ from .serializers import (
     UserPreferenceSerializer,
     ChangePasswordSerializer,
     UpdatePreferencesSerializer,
+    CustomTokenObtainPairSerializer,
+    TwoFactorSetupSerializer,
+    TwoFactorVerifySerializer,
+    TwoFactorDisableSerializer,
 )
-from .serializers import CustomTokenObtainPairSerializer
 
 User = get_user_model()
 
@@ -217,3 +220,177 @@ class AuthorProfileViewSet(viewsets.ModelViewSet):
         
         serializer = ArticleListSerializer(articles, many=True)
         return Response(serializer.data)
+
+
+# Two-Factor Authentication Views
+class TwoFactorSetupView(generics.GenericAPIView):
+    """
+    İki faktörlü kimlik doğrulama kurulum endpoint'i
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = TwoFactorSetupSerializer
+
+    @extend_schema(
+        summary="2FA Kurulum",
+        description="İki faktörlü kimlik doğrulama için QR kod ve yedek kodlar oluşturur",
+    )
+    def post(self, request):
+        from apps.accounts.two_factor import (
+            generate_totp_secret,
+            generate_backup_codes,
+            get_totp_uri,
+            generate_qr_code
+        )
+
+        user = request.user
+
+        # Check if 2FA is already enabled
+        if user.two_factor_enabled:
+            return Response(
+                {'error': 'İki faktörlü kimlik doğrulama zaten aktif'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Generate secret and backup codes
+        secret = generate_totp_secret()
+        backup_codes = generate_backup_codes(10)
+
+        # Temporarily store in session (not saved to DB yet)
+        request.session['temp_2fa_secret'] = secret
+        request.session['temp_2fa_backup_codes'] = backup_codes
+
+        # Generate QR code
+        uri = get_totp_uri(user, secret)
+        qr_code = generate_qr_code(uri)
+
+        return Response({
+            'secret': secret,
+            'qr_code': qr_code,
+            'backup_codes': backup_codes,
+            'message': 'QR kodu tarayıcınıza okutun ve doğrulama kodunu girin'
+        })
+
+
+class TwoFactorVerifyView(generics.GenericAPIView):
+    """
+    2FA kurulumu doğrulama endpoint'i
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = TwoFactorVerifySerializer
+
+    @extend_schema(
+        summary="2FA Doğrulama",
+        description="Authenticator app'den gelen kodu doğrulayarak 2FA'yı aktifleştirir",
+    )
+    def post(self, request):
+        from apps.accounts.two_factor import verify_totp_code
+
+        user = request.user
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        code = serializer.validated_data['code']
+
+        # Get temporary secret from session
+        secret = request.session.get('temp_2fa_secret')
+        backup_codes = request.session.get('temp_2fa_backup_codes')
+
+        if not secret or not backup_codes:
+            return Response(
+                {'error': 'Önce kurulum adımını tamamlayın'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verify code
+        if not verify_totp_code(secret, code):
+            return Response(
+                {'error': 'Geçersiz doğrulama kodu'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Save to user
+        user.totp_secret = secret
+        user.backup_codes = backup_codes
+        user.two_factor_enabled = True
+        user.save()
+
+        # Clear session
+        del request.session['temp_2fa_secret']
+        del request.session['temp_2fa_backup_codes']
+
+        return Response({
+            'message': 'İki faktörlü kimlik doğrulama başarıyla aktifleştirildi',
+            'two_factor_enabled': True
+        })
+
+
+class TwoFactorDisableView(generics.GenericAPIView):
+    """
+    2FA devre dışı bırakma endpoint'i
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = TwoFactorDisableSerializer
+
+    @extend_schema(
+        summary="2FA Devre Dışı Bırak",
+        description="İki faktörlü kimlik doğrulamayı devre dışı bırakır",
+    )
+    def post(self, request):
+        from apps.accounts.two_factor import verify_totp_code
+
+        user = request.user
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        password = serializer.validated_data['password']
+        code = serializer.validated_data['code']
+
+        # Check if 2FA is enabled
+        if not user.two_factor_enabled:
+            return Response(
+                {'error': 'İki faktörlü kimlik doğrulama zaten kapalı'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verify password
+        if not user.check_password(password):
+            return Response(
+                {'error': 'Geçersiz şifre'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verify TOTP code
+        if not verify_totp_code(user.totp_secret, code):
+            return Response(
+                {'error': 'Geçersiz doğrulama kodu'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Disable 2FA
+        user.two_factor_enabled = False
+        user.totp_secret = ''
+        user.backup_codes = []
+        user.save()
+
+        return Response({
+            'message': 'İki faktörlü kimlik doğrulama devre dışı bırakıldı',
+            'two_factor_enabled': False
+        })
+
+
+class TwoFactorStatusView(generics.GenericAPIView):
+    """
+    2FA durumu kontrol endpoint'i
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="2FA Durumu",
+        description="Kullanıcının 2FA durumunu kontrol eder",
+    )
+    def get(self, request):
+        user = request.user
+        return Response({
+            'two_factor_enabled': user.two_factor_enabled,
+            'backup_codes_remaining': len(user.backup_codes) if user.two_factor_enabled else 0
+        })

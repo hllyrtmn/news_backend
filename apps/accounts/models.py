@@ -45,7 +45,23 @@ class CustomUser(AbstractUser):
         default=False,
         verbose_name='Email Doğrulandı'
     )
-    
+
+    # Two-Factor Authentication
+    two_factor_enabled = models.BooleanField(
+        default=False,
+        verbose_name='İki Faktörlü Kimlik Doğrulama Aktif'
+    )
+    totp_secret = models.CharField(
+        max_length=32,
+        blank=True,
+        verbose_name='TOTP Secret Key'
+    )
+    backup_codes = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name='Yedek Kodlar'
+    )
+
     class Meta:
         verbose_name = 'Kullanıcı'
         verbose_name_plural = 'Kullanıcılar'

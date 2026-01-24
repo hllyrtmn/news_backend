@@ -47,7 +47,8 @@ urlpatterns = [
     path('api/v1/core/', include('apps.core.urls')),
     path('api/v1/advertisements/', include('apps.advertisements.urls')),  # Yeni: Reklam sistemi
     path('api/v1/bookmarks/', include('apps.bookmarks.urls')),  # Yeni: Bookmark sistemi
-    
+    path('api/v1/notifications/', include('apps.notifications.urls')),  # Yeni: Bildirim sistemi
+
     # CKEditor
     path('ckeditor/', include('ckeditor_uploader.urls')),
 ]

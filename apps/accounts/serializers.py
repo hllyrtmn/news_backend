@@ -3,8 +3,54 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from .models import AuthorProfile, UserPreference, UserPreferredCategory
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from dj_rest_auth.registration.serializers import RegisterSerializer
+from allauth.account.adapter import get_adapter
+from allauth.account.utils import setup_user_email
 
 User = get_user_model()
+
+
+class CustomRegisterSerializer(RegisterSerializer):
+    """
+    Custom registration serializer with email verification support.
+    Used by dj-rest-auth for email verification flow.
+    """
+    first_name = serializers.CharField(max_length=150, required=False)
+    last_name = serializers.CharField(max_length=150, required=False)
+    user_type = serializers.ChoiceField(
+        choices=['reader', 'author', 'subscriber', 'premium'],
+        default='reader',
+        required=False
+    )
+
+    def get_cleaned_data(self):
+        """Override to include custom fields"""
+        data = super().get_cleaned_data()
+        data['first_name'] = self.validated_data.get('first_name', '')
+        data['last_name'] = self.validated_data.get('last_name', '')
+        data['user_type'] = self.validated_data.get('user_type', 'reader')
+        return data
+
+    def save(self, request):
+        """Override save to create user with custom fields"""
+        adapter = get_adapter()
+        user = adapter.new_user(request)
+        self.cleaned_data = self.get_cleaned_data()
+        user = adapter.save_user(request, user, self, commit=False)
+
+        # Set custom fields
+        user.first_name = self.cleaned_data.get('first_name', '')
+        user.last_name = self.cleaned_data.get('last_name', '')
+        user.user_type = self.cleaned_data.get('user_type', 'reader')
+        user.save()
+
+        # Setup email verification
+        setup_user_email(request, user, [])
+
+        # Create user preferences
+        UserPreference.objects.get_or_create(user=user)
+
+        return user
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -187,9 +233,33 @@ class UpdatePreferencesSerializer(serializers.ModelSerializer):
         return instance
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    totp_code = serializers.CharField(max_length=6, required=False, write_only=True)
+
     def validate(self, attrs):
+        # Remove TOTP code from attrs before super().validate()
+        totp_code = attrs.pop('totp_code', None)
+
         data = super().validate(attrs)
-        
+
+        # Check if user has 2FA enabled
+        if self.user.two_factor_enabled:
+            if not totp_code:
+                raise serializers.ValidationError({
+                    'totp_code': 'İki faktörlü kimlik doğrulama kodu gerekli',
+                    'requires_2fa': True
+                })
+
+            # Verify TOTP code
+            from apps.accounts.two_factor import verify_totp_code, verify_backup_code
+
+            # Try TOTP code first
+            if not verify_totp_code(self.user.totp_secret, totp_code):
+                # Try backup code
+                if not verify_backup_code(self.user, totp_code):
+                    raise serializers.ValidationError({
+                        'totp_code': 'Geçersiz doğrulama kodu'
+                    })
+
         # Yanıta kullanıcı objesini de ekleyelim
         data['user'] = {
             'id': self.user.id,
@@ -197,9 +267,28 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'email': self.user.email,
             'first_name': self.user.first_name,
             'last_name': self.user.last_name,
-            'user_type': self.user.user_type, # Burası kritik! Guard buraya bakıyor.
+            'user_type': self.user.user_type,
             'avatar': self.user.avatar.url if self.user.avatar else None,
-            'is_verified': self.user.is_verified
+            'is_verified': self.user.is_verified,
+            'two_factor_enabled': self.user.two_factor_enabled
         }
-        
+
         return data
+
+
+class TwoFactorSetupSerializer(serializers.Serializer):
+    """Serializer for 2FA setup response"""
+    secret = serializers.CharField(read_only=True)
+    qr_code = serializers.CharField(read_only=True)
+    backup_codes = serializers.ListField(child=serializers.CharField(), read_only=True)
+
+
+class TwoFactorVerifySerializer(serializers.Serializer):
+    """Serializer for verifying 2FA code during setup"""
+    code = serializers.CharField(max_length=6, required=True)
+
+
+class TwoFactorDisableSerializer(serializers.Serializer):
+    """Serializer for disabling 2FA"""
+    password = serializers.CharField(required=True, write_only=True)
+    code = serializers.CharField(max_length=6, required=True)

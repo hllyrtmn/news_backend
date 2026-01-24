@@ -39,6 +39,9 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.facebook',
+    'allauth.socialaccount.providers.twitter',
     'dj_rest_auth',
     'dj_rest_auth.registration',
     
@@ -60,6 +63,7 @@ INSTALLED_APPS = [
     'apps.analytics',
     'apps.advertisements',  # Yeni: Reklam sistemi
     'apps.bookmarks',  # Yeni: Bookmark ve okuma listeleri
+    'apps.notifications',  # Yeni: Bildirim sistemi
 ]
 
 MIDDLEWARE = [
@@ -102,6 +106,72 @@ REST_AUTH = {
     'JWT_AUTH_COOKIE': 'jwt-auth',
     'JWT_AUTH_REFRESH_COOKIE': 'jwt-refresh',
     'JWT_AUTH_HTTPONLY': False,
+    'REGISTER_SERIALIZER': 'apps.accounts.serializers.CustomRegisterSerializer',
+}
+
+# Django Allauth Settings
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # E-posta doğrulama zorunlu
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+
+# Social Auth Settings
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'  # Social auth'ta e-posta doğrulama gerekmesin
+SOCIALACCOUNT_QUERY_EMAIL = True
+
+# Social Account Providers Configuration
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'APP': {
+            'client_id': config('GOOGLE_OAUTH_CLIENT_ID', default=''),
+            'secret': config('GOOGLE_OAUTH_SECRET', default=''),
+            'key': ''
+        }
+    },
+    'facebook': {
+        'METHOD': 'oauth2',
+        'SCOPE': ['email', 'public_profile'],
+        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
+        'INIT_PARAMS': {'cookie': True},
+        'FIELDS': [
+            'id',
+            'first_name',
+            'last_name',
+            'middle_name',
+            'name',
+            'name_format',
+            'picture',
+            'short_name',
+            'email',
+        ],
+        'EXCHANGE_TOKEN': True,
+        'VERIFIED_EMAIL': False,
+        'VERSION': 'v13.0',
+        'APP': {
+            'client_id': config('FACEBOOK_APP_ID', default=''),
+            'secret': config('FACEBOOK_APP_SECRET', default=''),
+            'key': ''
+        }
+    },
+    'twitter': {
+        'APP': {
+            'client_id': config('TWITTER_API_KEY', default=''),
+            'secret': config('TWITTER_API_SECRET', default=''),
+            'key': ''
+        }
+    }
 }
 
 # Database

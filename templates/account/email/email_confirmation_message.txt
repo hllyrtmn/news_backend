@@ -1,0 +1,12 @@
+Merhaba {{ user.get_full_name|default:user.username }},
+
+Haber sitemize hoş geldiniz! E-posta adresinizi doğrulamak için lütfen aşağıdaki bağlantıya tıklayın:
+
+{{ activate_url }}
+
+Bu bağlantı {{ key_expiration_days }} gün içinde geçerliliğini yitirecektir.
+
+Eğer bu kaydı siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.
+
+Saygılarımızla,
+{{ site_name }} Ekibi
