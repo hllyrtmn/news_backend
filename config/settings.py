@@ -113,7 +113,7 @@ REST_AUTH = {
 # Django Allauth Settings
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_EMAIL_VERIFICATION = 'optional'  # Development için optional (production'da 'mandatory' yap)
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Development için optional (production'da 'mandatory' yap)
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_CONFIRM_EMAIL_ON_GET = True

@@ -65,6 +65,23 @@
           }
         </div>
 
+        <!-- Username -->
+        <div>
+          <label for="username" class="block text-sm font-medium text-gray-700">Kullanıcı Adı</label>
+          <input
+            id="username"
+            type="text"
+            formControlName="username"
+            required
+            class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+            [class.border-red-500]="registerForm.get('username')?.invalid && registerForm.get('username')?.touched"
+            placeholder="kullanici_adi"
+          />
+          @if (registerForm.get('username')?.invalid && registerForm.get('username')?.touched) {
+            <p class="mt-1 text-xs text-red-600">Kullanıcı adı en az 3 karakter olmalı</p>
+          }
+        </div>
+
         <!-- First Name -->
         <div>
           <label for="first_name" class="block text-sm font-medium text-gray-700">Ad</label>

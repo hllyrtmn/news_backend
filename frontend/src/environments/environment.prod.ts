@@ -1,8 +1,8 @@
 // Production environment
 export const environment = {
   production: true,
-  apiUrl: 'https://yourdomain.com/api/v1',
-  wsUrl: 'wss://yourdomain.com/ws',
+  apiUrl: 'https://localhost:8000/api/v1',
+  wsUrl: 'wss://localhost:8000/ws',
 
   // Social OAuth
   googleClientId: 'YOUR_GOOGLE_CLIENT_ID',
