@@ -394,3 +394,175 @@ class TwoFactorStatusView(generics.GenericAPIView):
             'two_factor_enabled': user.two_factor_enabled,
             'backup_codes_remaining': len(user.backup_codes) if user.two_factor_enabled else 0
         })
+
+
+# Social Authentication Views
+class GoogleLoginView(generics.GenericAPIView):
+    """
+    Google OAuth login endpoint
+    """
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Google ile Giriş",
+        description="Google ID token ile giriş yapar",
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'id_token': {'type': 'string'}
+                }
+            }
+        }
+    )
+    def post(self, request):
+        from google.oauth2 import id_token
+        from google.auth.transport import requests as google_requests
+        from rest_framework_simplejwt.tokens import RefreshToken
+        from django.conf import settings
+        
+        token = request.data.get('id_token')
+        
+        if not token:
+            return Response(
+                {'error': 'id_token gerekli'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Google ID token'ı doğrula
+            idinfo = id_token.verify_oauth2_token(
+                token,
+                google_requests.Request(),
+                settings.SOCIALACCOUNT_PROVIDERS['google']['APP']['client_id']
+            )
+            
+            # Kullanıcı bilgilerini al
+            email = idinfo.get('email')
+            first_name = idinfo.get('given_name', '')
+            last_name = idinfo.get('family_name', '')
+            
+            if not email:
+                return Response(
+                    {'error': 'Email bilgisi alınamadı'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Kullanıcıyı bul veya oluştur
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    'username': email.split('@')[0],
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'is_verified': True  # Google hesabı doğrulanmış
+                }
+            )
+            
+            # JWT token oluştur
+            refresh = RefreshToken.for_user(user)
+            
+            return Response({
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': UserSerializer(user).data
+            })
+            
+        except ValueError as e:
+            return Response(
+                {'error': 'Geçersiz token', 'detail': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class FacebookLoginView(generics.GenericAPIView):
+    """
+    Facebook OAuth login endpoint
+    """
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Facebook ile Giriş",
+        description="Facebook access token ile giriş yapar",
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'access_token': {'type': 'string'}
+                }
+            }
+        }
+    )
+    def post(self, request):
+        import requests as http_requests
+        from rest_framework_simplejwt.tokens import RefreshToken
+        from django.conf import settings
+        
+        access_token = request.data.get('access_token')
+        
+        if not access_token:
+            return Response(
+                {'error': 'access_token gerekli'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Facebook API'den kullanıcı bilgilerini al
+            graph_url = f'https://graph.facebook.com/me?fields=id,email,first_name,last_name&access_token={access_token}'
+            response = http_requests.get(graph_url)
+            user_data = response.json()
+            
+            if 'error' in user_data:
+                return Response(
+                    {'error': 'Geçersiz token', 'detail': user_data['error']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            email = user_data.get('email')
+            if not email:
+                return Response(
+                    {'error': 'Email bilgisi alınamadı'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Kullanıcıyı bul veya oluştur
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    'username': email.split('@')[0],
+                    'first_name': user_data.get('first_name', ''),
+                    'last_name': user_data.get('last_name', ''),
+                    'is_verified': True
+                }
+            )
+            
+            # JWT token oluştur
+            refresh = RefreshToken.for_user(user)
+            
+            return Response({
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': UserSerializer(user).data
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': 'Facebook login başarısız', 'detail': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class TwitterLoginView(generics.GenericAPIView):
+    """
+    Twitter OAuth login endpoint (redirect to Twitter)
+    """
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Twitter ile Giriş",
+        description="Twitter OAuth'a yönlendirir",
+    )
+    def get(self, request):
+        # Twitter OAuth flow için redirect URL
+        from django.shortcuts import redirect
+        return redirect('/accounts/twitter/login/')

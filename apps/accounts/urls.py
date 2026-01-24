@@ -12,6 +12,9 @@ from .views import (
     TwoFactorVerifyView,
     TwoFactorDisableView,
     TwoFactorStatusView,
+    GoogleLoginView,
+    FacebookLoginView,
+    TwitterLoginView,
 )
 
 router = DefaultRouter()
@@ -27,8 +30,11 @@ urlpatterns = [
     path('dj-rest-auth/', include('dj_rest_auth.urls')),
     path('dj-rest-auth/registration/', include('dj_rest_auth.registration.urls')),
 
-    # Social authentication
-    path('social/', include('allauth.socialaccount.urls')),
+    # Social authentication (REST API)
+    path('social/', include('dj_rest_auth.registration.urls')),  # Social login endpoints
+    path('social/google/', GoogleLoginView.as_view(), name='google-login'),
+    path('social/facebook/', FacebookLoginView.as_view(), name='facebook-login'),
+    path('social/twitter/', TwitterLoginView.as_view(), name='twitter-login'),
 
     # Profile
     path('profile/', UserProfileView.as_view(), name='user-profile'),
