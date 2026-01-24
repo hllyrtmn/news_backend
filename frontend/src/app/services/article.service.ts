@@ -108,13 +108,17 @@ export class ArticleService {
    * Upload article image
    */
   uploadImage(file: File): Observable<{ url: string }> {
-    return this.api.upload<{ url: string }>('articles/upload_image/', file, 'image');
+    const formData = new FormData();
+    formData.append('image', file);
+    return this.api.upload<{ url: string }>('articles/upload_image/', formData);
   }
 
   /**
    * Upload video file
    */
   uploadVideo(file: File): Observable<{ url: string }> {
-    return this.api.upload<{ url: string }>('articles/upload_video/', file, 'video');
+    const formData = new FormData();
+    formData.append('video', file);
+    return this.api.upload<{ url: string }>('articles/upload_video/', formData);
   }
 }

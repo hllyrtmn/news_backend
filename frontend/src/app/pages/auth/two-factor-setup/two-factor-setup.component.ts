@@ -17,7 +17,7 @@ export class TwoFactorSetupComponent implements OnInit {
   private twoFactorService = inject(TwoFactorService);
   private router = inject(Router);
 
-  verifyForm: FormGroup;
+  verifyForm!: FormGroup;
   loading = signal(false);
   error = signal<string | null>(null);
   setupData = signal<TwoFactorSetupResponse | null>(null);

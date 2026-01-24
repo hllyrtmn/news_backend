@@ -12,6 +12,11 @@ import { BreakingNewsWebSocketMessage } from '../../models/notification.model';
 export class BreakingNewsWebSocketService {
   private wsService = inject(WebSocketService);
 
+  // Expose WebSocket messages
+  public get messages$(): Observable<BreakingNewsWebSocketMessage> {
+    return this.wsService.messages$ as Observable<BreakingNewsWebSocketMessage>;
+  }
+
   /**
    * Connect to breaking news WebSocket (no auth required)
    */

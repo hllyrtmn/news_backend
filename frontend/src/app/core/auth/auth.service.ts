@@ -143,16 +143,37 @@ export class AuthService {
   }
 
   /**
-   * Get current user profile
+   * Get current user profile from API
    */
-  getCurrentUser(): Observable<User> {
+  fetchCurrentUser(): Observable<User> {
     return this.api.get<User>('auth/profile/');
+  }
+
+  /**
+   * Get current user from memory (synchronous)
+   */
+  getCurrentUser(): User | null {
+    return this.currentUserSubject.value;
+  }
+
+  /**
+   * Load user from storage
+   */
+  loadUserFromStorage(): void {
+    this.checkAuth();
+  }
+
+  /**
+   * Check if authenticated (synchronous)
+   */
+  isAuthenticated(): boolean {
+    return this.isLoggedIn();
   }
 
   /**
    * Set authentication session
    */
-  private setSession(authResult: LoginResponse): void {
+  setSession(authResult: LoginResponse): void {
     this.setTokens(authResult.access, authResult.refresh);
 
     // Save user

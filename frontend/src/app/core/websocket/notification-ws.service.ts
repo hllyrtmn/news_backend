@@ -20,6 +20,11 @@ export class NotificationWebSocketService {
   private connectedSubject = new BehaviorSubject<boolean>(false);
   public connected$ = this.connectedSubject.asObservable();
 
+  // Expose WebSocket messages
+  public get messages$(): Observable<NotificationWebSocketMessage> {
+    return this.wsService.messages$ as Observable<NotificationWebSocketMessage>;
+  }
+
   /**
    * Connect to notification WebSocket
    */

@@ -40,6 +40,9 @@ export interface NotificationPreference {
   inapp_on_mention: boolean;
 }
 
+// Alias for plural form
+export type NotificationPreferences = NotificationPreference;
+
 export interface NotificationWebSocketMessage {
   type: 'connection_established' | 'unread_count' | 'notification' | 'notification_read' | 'all_notifications_read' | 'error';
   notification?: {

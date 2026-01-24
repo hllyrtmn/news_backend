@@ -16,7 +16,7 @@ export class RegisterComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
 
-  registerForm: FormGroup;
+  registerForm!: FormGroup;
   loading = signal(false);
   error = signal<string | null>(null);
   success = signal(false);

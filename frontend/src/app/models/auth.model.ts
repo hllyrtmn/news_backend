@@ -70,6 +70,7 @@ export interface TwoFactorVerifyRequest {
 }
 
 export interface TwoFactorVerifyResponse {
+  success: boolean;
   message: string;
   two_factor_enabled: boolean;
 }

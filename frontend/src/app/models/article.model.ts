@@ -114,6 +114,27 @@ export interface ArticleCreateRequest {
   meta_keywords?: string;
 }
 
+export interface ArticleUpdateRequest {
+  title?: string;
+  subtitle?: string;
+  summary?: string;
+  content?: string;
+  author?: number;
+  category?: number;
+  tags?: number[];
+  featured_image?: number;
+  status?: ArticleStatus;
+  visibility?: ArticleVisibility;
+  article_type?: ArticleType;
+  is_featured?: boolean;
+  is_breaking?: boolean;
+  published_at?: string;
+  video_url?: string;
+  meta_title?: string;
+  meta_description?: string;
+  meta_keywords?: string;
+}
+
 export interface PaginatedArticles {
   count: number;
   next?: string;

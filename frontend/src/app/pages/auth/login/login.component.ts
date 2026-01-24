@@ -18,7 +18,7 @@ export class LoginComponent implements OnInit {
   private socialAuthService = inject(SocialAuthService);
   private router = inject(Router);
 
-  loginForm: FormGroup;
+  loginForm!: FormGroup;
   loading = signal(false);
   error = signal<string | null>(null);
   requires2FA = signal(false);
