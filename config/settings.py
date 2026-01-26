@@ -403,6 +403,12 @@ CELERY_TASK_ROUTES = {
     'apps.analytics.tasks.update_popular_articles': {'queue': 'low_priority'},  # Background job
     'apps.analytics.tasks.cleanup_old_views': {'queue': 'low_priority'},
     'apps.newsletter.tasks.*': {'queue': 'low_priority'},  # Newsletter tasks
+    # Image processing tasks
+    'apps.media_app.tasks.process_image_task': {'queue': 'default'},  # Normal priority
+    'apps.media_app.tasks.batch_process_images_task': {'queue': 'low_priority'},
+    'apps.media_app.tasks.reprocess_unoptimized_images': {'queue': 'low_priority'},
+    'apps.media_app.tasks.cleanup_orphaned_image_variants': {'queue': 'low_priority'},
+    'apps.media_app.tasks.regenerate_image_variants_task': {'queue': 'default'},
 }
 
 # Queue definitions
@@ -433,6 +439,15 @@ CELERY_BEAT_SCHEDULE = {
     'cleanup-old-views': {
         'task': 'apps.analytics.tasks.cleanup_old_views',
         'schedule': crontab(hour=2, minute=0),  # Her gece saat 02:00
+    },
+    # Image optimization tasks
+    'reprocess-unoptimized-images': {
+        'task': 'apps.media_app.tasks.reprocess_unoptimized_images',
+        'schedule': crontab(minute='*/10'),  # Her 10 dakikada bir
+    },
+    'cleanup-orphaned-image-variants': {
+        'task': 'apps.media_app.tasks.cleanup_orphaned_image_variants',
+        'schedule': crontab(hour=3, minute=0),  # Her gece saat 03:00
     },
 }
 
@@ -515,6 +530,47 @@ FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
 ARTICLES_PER_PAGE = 20
 COMMENTS_PER_PAGE = 10
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+
+# Image Optimization Settings
+IMAGE_OPTIMIZATION = {
+    # WebP quality (0-100)
+    'WEBP_QUALITY': config('IMAGE_WEBP_QUALITY', default=85, cast=int),
+
+    # JPEG quality (0-100)
+    'JPEG_QUALITY': config('IMAGE_JPEG_QUALITY', default=85, cast=int),
+
+    # PNG compression level (0-9)
+    'PNG_COMPRESSION': config('IMAGE_PNG_COMPRESSION', default=6, cast=int),
+
+    # Responsive breakpoints (width in pixels)
+    'RESPONSIVE_SIZES': {
+        'xs': 320,   # Mobile small
+        'sm': 640,   # Mobile large
+        'md': 768,   # Tablet
+        'lg': 1024,  # Desktop small
+        'xl': 1280,  # Desktop
+        '2xl': 1536, # Desktop large
+    },
+
+    # Lazy loading placeholder settings
+    'PLACEHOLDER_SIZE': 20,    # Tiny placeholder width in pixels
+    'PLACEHOLDER_BLUR': 10,    # Blur radius for placeholder
+
+    # Processing settings
+    'AUTO_PROCESS': True,      # Automatically process uploaded images
+    'ASYNC_PROCESSING': True,  # Use Celery for async processing
+
+    # Storage optimization
+    'DELETE_ORIGINAL': False,   # Keep original file
+    'MAX_ORIGINAL_SIZE': 4096,  # Max dimension for original (resize if larger)
+}
+
+# Convenience settings (used by image_optimizer.py)
+IMAGE_WEBP_QUALITY = IMAGE_OPTIMIZATION['WEBP_QUALITY']
+IMAGE_JPEG_QUALITY = IMAGE_OPTIMIZATION['JPEG_QUALITY']
+IMAGE_PNG_COMPRESSION = IMAGE_OPTIMIZATION['PNG_COMPRESSION']
+IMAGE_PLACEHOLDER_SIZE = IMAGE_OPTIMIZATION['PLACEHOLDER_SIZE']
+IMAGE_PLACEHOLDER_BLUR = IMAGE_OPTIMIZATION['PLACEHOLDER_BLUR']
 
 # Django Channels (WebSocket) Configuration
 ASGI_APPLICATION = 'config.asgi.application'
