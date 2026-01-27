@@ -566,3 +566,47 @@ class TwitterLoginView(generics.GenericAPIView):
         # Twitter OAuth flow için redirect URL
         from django.shortcuts import redirect
         return redirect('/accounts/twitter/login/')
+
+
+class LogoutView(generics.GenericAPIView):
+    """
+    Logout endpoint - Blacklist refresh token
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Çıkış Yap",
+        description="Kullanıcının oturumunu kapatır ve refresh token'ı geçersiz kılar",
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'refresh': {'type': 'string', 'description': 'Refresh token'}
+                }
+            }
+        }
+    )
+    def post(self, request):
+        from rest_framework_simplejwt.tokens import RefreshToken
+        from rest_framework_simplejwt.exceptions import TokenError
+
+        refresh_token = request.data.get('refresh')
+
+        if not refresh_token:
+            return Response(
+                {'error': 'Refresh token gerekli'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response(
+                {'message': 'Başarıyla çıkış yapıldı'},
+                status=status.HTTP_200_OK
+            )
+        except TokenError as e:
+            return Response(
+                {'error': 'Geçersiz token', 'detail': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )

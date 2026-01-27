@@ -77,6 +77,24 @@ export class AuthService {
    * Logout
    */
   logout(): void {
+    const refreshToken = this.getRefreshToken();
+
+    // Call backend logout to blacklist token
+    if (refreshToken) {
+      this.api.post('auth/logout/', { refresh: refreshToken }).subscribe({
+        error: () => {
+          // Ignore errors, continue with local logout
+        }
+      });
+    }
+
+    this.clearSession();
+  }
+
+  /**
+   * Clear session (used internally)
+   */
+  private clearSession(): void {
     // Clear tokens
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');

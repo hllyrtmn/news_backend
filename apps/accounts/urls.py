@@ -15,6 +15,7 @@ from .views import (
     GoogleLoginView,
     FacebookLoginView,
     TwitterLoginView,
+    LogoutView,
 )
 
 router = DefaultRouter()
@@ -24,6 +25,7 @@ urlpatterns = [
     # Authentication (custom endpoints)
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('logout/', LogoutView.as_view(), name='logout'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
     # dj-rest-auth endpoints (email verification & password reset)

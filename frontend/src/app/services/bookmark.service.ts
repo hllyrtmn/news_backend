@@ -40,6 +40,13 @@ export class BookmarkService {
   }
 
   /**
+   * Check bookmark status (alias for isBookmarked)
+   */
+  checkBookmark(articleId: number): Observable<{ is_bookmarked: boolean; bookmark_id?: number }> {
+    return this.api.get<{ is_bookmarked: boolean; bookmark_id?: number }>(`bookmarks/check/${articleId}/`);
+  }
+
+  /**
    * Get reading lists
    */
   getReadingLists(): Observable<ReadingList[]> {
