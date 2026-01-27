@@ -266,7 +266,7 @@ import { Comment } from '../../models/comment.model';
               @if (authService.isAuthenticated()) {
                 <form (submit)="submitComment($event)" class="mb-8">
                   <textarea [(ngModel)]="newComment"
-                            name="comment"
+                            name="newComment"
                             rows="4"
                             class="w-full p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                             placeholder="Yorumunuzu yazın..."

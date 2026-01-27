@@ -251,6 +251,7 @@ import { Category } from '../../models/category.model';
               <form (submit)="subscribeNewsletter($event)" class="space-y-2">
                 <input type="email"
                        [(ngModel)]="newsletterEmail"
+                       name="newsletterEmail"
                        placeholder="E-posta adresiniz"
                        class="w-full px-3 py-2 rounded text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
                        required>
