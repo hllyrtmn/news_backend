@@ -15,9 +15,9 @@ export interface Article {
   subtitle: string;
   summary: string;
   content: string;
-  author: AuthorProfile;
-  co_authors: AuthorProfile[];
-  category: Category;
+  author?: AuthorProfile;
+  co_authors?: AuthorProfile[];
+  category?: Category;
   tags: Tag[];
   featured_image?: string;
   gallery: string[];
@@ -60,12 +60,12 @@ export interface ArticleListItem {
   slug: string;
   subtitle: string;
   summary: string;
-  category: {
+  category?: {
     id: number;
     name: string;
     slug: string;
   };
-  author: {
+  author?: {
     id: number;
     display_name: string;
     slug: string;
