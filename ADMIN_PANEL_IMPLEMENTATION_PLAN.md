@@ -12,11 +12,12 @@
 
 1. [Mimari Prensipleri](#-mimari-prensipleri)
 2. [Klasör Yapısı](#-klasör-yapısı)
-3. [Özellik Grupları](#-özellik-grupları)
-4. [Geliştirme Sırası](#-geliştirme-sırası)
-5. [Component Patterns](#-component-patterns)
-6. [State Management](#-state-management)
-7. [Type Safety](#-type-safety)
+3. [Utils, Helpers & Mappers](#-utils-helpers--mappers)
+4. [Özellik Grupları](#-özellik-grupları)
+5. [Geliştirme Sırası](#-geliştirme-sırası)
+6. [Component Patterns](#-component-patterns)
+7. [State Management](#-state-management)
+8. [Type Safety](#-type-safety)
 
 ---
 
@@ -31,14 +32,19 @@
 3. **Signal-Based Reactivity**: RxJS yerine Angular Signals (computed, effect)
 4. **Type Safety**: Strict TypeScript, interface/type tanımları
 5. **Single Responsibility**: Her component tek bir işten sorumlu
-6. **Reusable UI**: Shared components, design system
+6. **DRY (Don't Repeat Yourself)**: Utils, Helpers, Mappers ile kod tekrarını önle
+7. **Clean Code**: Component'ler sade, logic utils'de
+8. **Reusable UI**: Shared components, design system
 
 ### Anti-Patterns to Avoid
 
-❌ God Objects (tek component'te tüm logic)
-❌ Prop Drilling (signals ile çözülecek)
-❌ Mixed Concerns (data fetching + UI aynı yerde)
-❌ Any types (strict typing)
+❌ **God Objects** - Tek component'te tüm logic
+❌ **Prop Drilling** - Signals ile çözülecek
+❌ **Mixed Concerns** - Data fetching + UI aynı yerde
+❌ **Any Types** - Strict typing kullan
+❌ **Code Duplication** - Aynı kodu farklı yerlerde tekrarlama
+❌ **Inline Logic** - Complex logic component içinde değil, utils'de
+❌ **Magic Numbers/Strings** - Constants kullan
 
 ---
 
@@ -180,6 +186,32 @@ frontend/src/app/
 │   │   ├── empty-state/
 │   │   └── confirmation-dialog/
 │   │
+│   ├── utils/                         # Utility functions (pure)
+│   │   ├── date.utils.ts              # formatDate, parseDate, dateRange
+│   │   ├── string.utils.ts            # slugify, truncate, capitalize
+│   │   ├── array.utils.ts             # groupBy, sortBy, unique
+│   │   ├── validation.utils.ts        # isEmail, isUrl, isPhone
+│   │   ├── file.utils.ts              # formatSize, getExtension, validateImage
+│   │   └── number.utils.ts            # formatCurrency, percentage, abbreviate
+│   │
+│   ├── helpers/                       # Helper functions (stateful/side-effects)
+│   │   ├── form.helper.ts             # buildFormData, validateForm
+│   │   ├── http.helper.ts             # handleError, buildQueryParams
+│   │   ├── storage.helper.ts          # localStorage wrapper (type-safe)
+│   │   └── notification.helper.ts     # showSuccess, showError
+│   │
+│   ├── mappers/                       # Data transformation
+│   │   ├── article.mapper.ts          # API ↔ Form data transformation
+│   │   ├── user.mapper.ts
+│   │   ├── category.mapper.ts
+│   │   └── analytics.mapper.ts
+│   │
+│   ├── constants/                     # Shared constants
+│   │   ├── api.constants.ts           # API endpoints
+│   │   ├── app.constants.ts           # App-wide constants
+│   │   ├── routes.constants.ts        # Route paths
+│   │   └── validation.constants.ts    # Validation rules
+│   │
 │   ├── pipes/                         # Utility pipes
 │   │   ├── date-ago.pipe.ts
 │   │   ├── truncate.pipe.ts
@@ -197,6 +229,453 @@ frontend/src/app/
     └── state/
         └── admin-state.service.ts     # Global admin state
 ```
+
+---
+
+## 🧩 Utils, Helpers & Mappers
+
+> **Amaç:** Kod tekrarını önlemek, component'leri temiz tutmak, reusable logic
+
+### 📐 Prensip: DRY (Don't Repeat Yourself)
+
+**Kural:** Aynı logic 2. kez kullanılacaksa, extract et!
+
+### 1. Utils (Pure Functions)
+
+**Özellikler:**
+- ✅ Side-effect yok
+- ✅ Aynı input → aynı output
+- ✅ Test edilmesi kolay
+- ✅ Her yerde kullanılabilir
+
+**Örnekler:**
+
+```typescript
+// shared/utils/date.utils.ts
+export class DateUtils {
+  static formatDate(date: Date | string, format: string = 'DD.MM.YYYY'): string {
+    // Implementation
+  }
+
+  static dateAgo(date: Date | string): string {
+    const now = new Date();
+    const past = new Date(date);
+    const diffMs = now.getTime() - past.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+
+    if (diffMins < 1) return 'Az önce';
+    if (diffMins < 60) return `${diffMins} dakika önce`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)} saat önce`;
+    return `${Math.floor(diffMins / 1440)} gün önce`;
+  }
+
+  static isToday(date: Date | string): boolean {
+    const today = new Date();
+    const check = new Date(date);
+    return today.toDateString() === check.toDateString();
+  }
+}
+
+// shared/utils/string.utils.ts
+export class StringUtils {
+  static slugify(text: string): string {
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  static truncate(text: string, length: number = 100): string {
+    if (text.length <= length) return text;
+    return text.substring(0, length).trim() + '...';
+  }
+
+  static capitalize(text: string): string {
+    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+  }
+}
+
+// shared/utils/array.utils.ts
+export class ArrayUtils {
+  static groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
+    return array.reduce((result, item) => {
+      const group = String(item[key]);
+      if (!result[group]) result[group] = [];
+      result[group].push(item);
+      return result;
+    }, {} as Record<string, T[]>);
+  }
+
+  static sortBy<T>(array: T[], key: keyof T, order: 'asc' | 'desc' = 'asc'): T[] {
+    return [...array].sort((a, b) => {
+      const aVal = a[key];
+      const bVal = b[key];
+      if (aVal < bVal) return order === 'asc' ? -1 : 1;
+      if (aVal > bVal) return order === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  static unique<T>(array: T[]): T[] {
+    return Array.from(new Set(array));
+  }
+}
+
+// shared/utils/number.utils.ts
+export class NumberUtils {
+  static formatNumber(num: number): string {
+    return new Intl.NumberFormat('tr-TR').format(num);
+  }
+
+  static abbreviate(num: number): string {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toString();
+  }
+
+  static percentage(value: number, total: number): number {
+    return total === 0 ? 0 : Math.round((value / total) * 100);
+  }
+}
+```
+
+### 2. Helpers (Stateful/Side-Effects)
+
+**Özellikler:**
+- ⚠️ Side-effects olabilir (API, localStorage, vb.)
+- ✅ Reusable business logic
+- ✅ Component'lerden extract edilmiş
+
+**Örnekler:**
+
+```typescript
+// shared/helpers/http.helper.ts
+export class HttpHelper {
+  static buildQueryParams(filters: Record<string, any>): string {
+    const params = new URLSearchParams();
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        params.append(key, String(value));
+      }
+    });
+
+    return params.toString();
+  }
+
+  static handleError(error: any): string {
+    if (error.error?.detail) return error.error.detail;
+    if (error.error?.message) return error.error.message;
+    if (error.status === 404) return 'Kayıt bulunamadı';
+    if (error.status === 403) return 'Bu işlem için yetkiniz yok';
+    if (error.status === 500) return 'Sunucu hatası';
+    return 'Bir hata oluştu';
+  }
+}
+
+// shared/helpers/storage.helper.ts
+export class StorageHelper {
+  static set<T>(key: string, value: T): void {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      console.error('Storage error:', e);
+    }
+  }
+
+  static get<T>(key: string): T | null {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : null;
+    } catch (e) {
+      console.error('Storage error:', e);
+      return null;
+    }
+  }
+
+  static remove(key: string): void {
+    localStorage.removeItem(key);
+  }
+}
+
+// shared/helpers/form.helper.ts
+export class FormHelper {
+  static buildFormData(data: Record<string, any>): FormData {
+    const formData = new FormData();
+
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        if (value instanceof File) {
+          formData.append(key, value);
+        } else if (Array.isArray(value)) {
+          value.forEach(item => formData.append(key, item));
+        } else {
+          formData.append(key, String(value));
+        }
+      }
+    });
+
+    return formData;
+  }
+
+  static markFormGroupTouched(formGroup: any): void {
+    Object.keys(formGroup.controls).forEach(key => {
+      const control = formGroup.get(key);
+      control?.markAsTouched();
+
+      if (control?.controls) {
+        this.markFormGroupTouched(control);
+      }
+    });
+  }
+}
+```
+
+### 3. Mappers (Data Transformation)
+
+**Özellikler:**
+- ✅ API response → Domain model
+- ✅ Form data → API request
+- ✅ Type-safe dönüşümler
+- ✅ Null/undefined handling
+
+**Örnekler:**
+
+```typescript
+// shared/mappers/article.mapper.ts
+import { Article, ArticleFormData, ArticleApiResponse } from '../models/article.types';
+
+export class ArticleMapper {
+  // API response → Domain model
+  static toDomain(apiData: ArticleApiResponse): Article {
+    return {
+      id: apiData.id,
+      title: apiData.title,
+      slug: apiData.slug,
+      content: apiData.content,
+      excerpt: apiData.excerpt || '',
+      author: {
+        id: apiData.author.id,
+        name: apiData.author.full_name,
+        avatar: apiData.author.profile_picture
+      },
+      category: apiData.category ? {
+        id: apiData.category.id,
+        name: apiData.category.name,
+        slug: apiData.category.slug
+      } : null,
+      tags: apiData.tags.map(tag => ({
+        id: tag.id,
+        name: tag.name
+      })),
+      featuredImage: apiData.featured_image,
+      status: apiData.status,
+      viewsCount: apiData.views_count,
+      createdAt: new Date(apiData.created_at),
+      updatedAt: new Date(apiData.updated_at),
+      publishedAt: apiData.published_at ? new Date(apiData.published_at) : null
+    };
+  }
+
+  // Form data → API request
+  static toApiRequest(formData: ArticleFormData): Record<string, any> {
+    return {
+      title: formData.title,
+      content: formData.content,
+      excerpt: formData.excerpt || '',
+      category: formData.categoryId,
+      tags: formData.tagIds,
+      featured_image: formData.featuredImageId,
+      status: formData.status,
+      scheduled_at: formData.scheduledAt
+    };
+  }
+
+  // Multiple API items → Domain models
+  static toDomainList(apiList: ArticleApiResponse[]): Article[] {
+    return apiList.map(item => this.toDomain(item));
+  }
+}
+
+// shared/mappers/analytics.mapper.ts
+export class AnalyticsMapper {
+  static mapDashboardStats(apiData: any) {
+    return {
+      totalArticles: apiData.total_articles,
+      totalUsers: apiData.total_users,
+      totalViews: apiData.total_views,
+      totalComments: apiData.total_comments,
+      todayVsYesterday: {
+        articles: this.calculateChange(
+          apiData.today_stats.articles,
+          apiData.yesterday_stats.articles
+        ),
+        views: this.calculateChange(
+          apiData.today_stats.views,
+          apiData.yesterday_stats.views
+        )
+      },
+      trends: apiData.last_7_days.map((day: any) => ({
+        date: new Date(day.date),
+        views: day.views,
+        articles: day.articles
+      }))
+    };
+  }
+
+  private static calculateChange(current: number, previous: number): number {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - previous) / previous) * 100);
+  }
+}
+```
+
+### 4. Constants
+
+**Özellikler:**
+- ✅ Magic strings/numbers yok
+- ✅ Tek bir yerde tanımla
+- ✅ Type-safe
+
+**Örnekler:**
+
+```typescript
+// shared/constants/api.constants.ts
+export const API_ENDPOINTS = {
+  articles: '/api/v1/articles',
+  categories: '/api/v1/categories',
+  users: '/api/v1/accounts/users',
+  comments: '/api/v1/comments',
+  analytics: '/api/v1/analytics',
+  media: '/api/v1/media'
+} as const;
+
+export const API_METHODS = {
+  GET: 'GET',
+  POST: 'POST',
+  PUT: 'PUT',
+  PATCH: 'PATCH',
+  DELETE: 'DELETE'
+} as const;
+
+// shared/constants/app.constants.ts
+export const APP_CONFIG = {
+  itemsPerPage: 20,
+  maxImageSize: 5 * 1024 * 1024, // 5MB
+  allowedImageTypes: ['image/jpeg', 'image/png', 'image/webp'],
+  maxTitleLength: 200,
+  maxExcerptLength: 500
+} as const;
+
+export const ARTICLE_STATUS = {
+  DRAFT: 'draft',
+  PUBLISHED: 'published',
+  SCHEDULED: 'scheduled',
+  ARCHIVED: 'archived'
+} as const;
+
+export type ArticleStatus = typeof ARTICLE_STATUS[keyof typeof ARTICLE_STATUS];
+
+// shared/constants/routes.constants.ts
+export const ADMIN_ROUTES = {
+  dashboard: '/admin/dashboard',
+  articles: {
+    list: '/admin/articles',
+    create: '/admin/articles/new',
+    edit: (id: number) => `/admin/articles/${id}/edit`
+  },
+  users: {
+    list: '/admin/users',
+    detail: (id: number) => `/admin/users/${id}`
+  }
+} as const;
+```
+
+### 💡 Kullanım Örnekleri
+
+#### ❌ KÖTÜ - Kod Tekrarı
+
+```typescript
+// article-list.component.ts
+export class ArticleListComponent {
+  formatDate(date: string): string {
+    const now = new Date();
+    const past = new Date(date);
+    const diffMs = now.getTime() - past.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    // ... aynı kod
+  }
+}
+
+// comment-list.component.ts
+export class CommentListComponent {
+  formatDate(date: string): string {
+    const now = new Date();
+    const past = new Date(date);
+    const diffMs = now.getTime() - past.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    // ... AYNI KOD TEKRAR! ❌
+  }
+}
+```
+
+#### ✅ İYİ - Utils Kullan
+
+```typescript
+// article-list.component.ts
+import { DateUtils } from '@shared/utils/date.utils';
+
+export class ArticleListComponent {
+  formatDate(date: string): string {
+    return DateUtils.dateAgo(date);
+  }
+}
+
+// comment-list.component.ts
+import { DateUtils } from '@shared/utils/date.utils';
+
+export class CommentListComponent {
+  formatDate(date: string): string {
+    return DateUtils.dateAgo(date);
+  }
+}
+```
+
+#### ✅ DAHA İYİ - Pipe Kullan
+
+```typescript
+// shared/pipes/date-ago.pipe.ts
+import { Pipe, PipeTransform } from '@angular/core';
+import { DateUtils } from '@shared/utils/date.utils';
+
+@Pipe({
+  name: 'dateAgo',
+  standalone: true
+})
+export class DateAgoPipe implements PipeTransform {
+  transform(value: string | Date): string {
+    return DateUtils.dateAgo(value);
+  }
+}
+
+// Template'te kullan
+{{ article.created_at | dateAgo }}
+```
+
+### 📋 Utils/Helpers Checklist
+
+Yeni bir logic yazarken kendine sor:
+
+- [ ] Bu logic başka yerde de kullanılabilir mi?
+- [ ] Pure function olarak yazılabilir mi? (Utils)
+- [ ] Side-effect var mı? (Helpers)
+- [ ] API/Form data dönüşümü mü? (Mappers)
+- [ ] Magic string/number var mı? (Constants)
+- [ ] Component'i basitleştirir mi?
+
+**Eğer EVET ise → Extract et!**
 
 ---
 
@@ -497,33 +976,40 @@ PUT  /api/v1/settings/seo/
 
 ### PHASE 1: Foundation (Temel Altyapı)
 
-**Hedef:** Ortak componentler, layout, routing
+**Hedef:** Ortak componentler, layout, routing, utils/helpers
 
 ```
-1. Shared UI Components oluştur (1 gün)
+1. Utils, Helpers, Mappers oluştur (1 gün)
+   - DateUtils, StringUtils, ArrayUtils, NumberUtils
+   - HttpHelper, StorageHelper, FormHelper
+   - Constants (API, App, Routes)
+   - Base mappers (ArticleMapper, UserMapper)
+
+2. Shared UI Components oluştur (1 gün)
    - Button, Card, Table, FormField
    - Modal, Toast, LoadingSpinner
    - EmptyState, ConfirmationDialog
 
-2. Admin Layout oluştur (1 gün)
+3. Admin Layout oluştur (1 gün)
    - AdminLayoutComponent (sidebar + header + outlet)
    - SidebarComponent (navigasyon menü)
    - HeaderComponent (profil, logout, notif)
 
-3. Routing yapılandırması (2 saat)
+4. Routing yapılandırması (2 saat)
    - admin.routes.ts
    - Auth guard
    - Role-based access control
 
-4. Core Services (1 gün)
-   - ApiService (HTTP interceptor)
+5. Core Services (1 gün)
+   - ApiService (HTTP interceptor + HttpHelper kullanımı)
    - AdminStateService (global state - signals)
    - Type definitions
 
-Toplam: ~3 gün
+Toplam: ~4 gün
 ```
 
 **Deliverables:**
+- ✅ Utils/Helpers/Mappers library
 - ✅ Shared UI library
 - ✅ Admin layout shell
 - ✅ Routing system
@@ -702,7 +1188,7 @@ Toplam: ~1 gün
 
 ### 📊 Toplam Süre Tahmini
 
-- Phase 1 (Foundation): **3 gün**
+- Phase 1 (Foundation + Utils): **4 gün**
 - Phase 2 (Dashboard): **2 gün**
 - Phase 3 (Articles): **4 gün**
 - Phase 4 (Category/Media): **3 gün**
@@ -711,7 +1197,9 @@ Toplam: ~1 gün
 - Phase 7 (Analytics): **2 gün**
 - Phase 8 (Settings): **1 gün**
 
-**TOPLAM: ~19 gün** (pure development time)
+**TOPLAM: ~20 gün** (pure development time)
+
+> Utils/Helpers'a 1 gün eklendi çünkü temiz kod için temel altyapı önemli!
 
 ---
 
