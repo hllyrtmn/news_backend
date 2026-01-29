@@ -77,6 +77,13 @@ export const API_ENDPOINTS = {
     delete: (id: number) => `${API_BASE}/media/${id}/`,
   },
 
+  // Dashboard
+  dashboard: {
+    stats: `${API_BASE}/dashboard/stats/`,
+    recentActivities: `${API_BASE}/dashboard/recent-activities/`,
+    popularArticles: `${API_BASE}/dashboard/popular-articles/`,
+  },
+
   // Analytics
   analytics: {
     dashboard: `${API_BASE}/analytics/admin-dashboard/`,
