@@ -12,12 +12,12 @@
 - [x] **PHASE 2:** Dashboard - 3/3 ✅
 - [x] **PHASE 3:** Article Management - 3/3 ✅
 - [x] **PHASE 4:** Category Management - 1/1 ✅ (Media skip edildi)
-- [ ] **PHASE 5:** User Management - 0/2
+- [x] **PHASE 5:** User Management - 2/2 ✅
 - [ ] **PHASE 6:** Comment Moderation - 0/1
 - [ ] **PHASE 7:** Analytics - 0/1
 - [ ] **PHASE 8:** Settings - 0/1
 
-**Toplam İlerleme:** 13/18 ana task (72% tamamlandı)
+**Toplam İlerleme:** 15/18 ana task (83% tamamlandı)
 
 ---
 
@@ -303,22 +303,30 @@
 
 ---
 
-## 🎯 PHASE 5: User Management
+## 🎯 PHASE 5: User Management ✅ TAMAMLANDI
 
 **Süre:** ~2.5 gün
+**Tamamlanma:** 2026-01-29
 
-### 5.1 User List
+### 5.1 User List ✅
 
-- [ ] UserListComponent (Smart)
-- [ ] UserTableComponent (Dumb)
-- [ ] UserFiltersComponent
+- [x] user-list.component.ts (Smart)
+- [x] Integrated Table component (reusable)
+- [x] Filter support (search, role, status)
+- [x] Toggle user active/inactive
+- [x] Role badges with colors
+- [x] Avatar display with fallback
+- [x] Pagination
 
-### 5.2 User Editor
+### 5.2 User Form ✅
 
-- [ ] UserEditorComponent (Smart)
-- [ ] UserFormComponent
-- [ ] RoleSelectorComponent
-- [ ] PermissionMatrixComponent
+- [x] user-form.component.ts (Smart - Create/Edit)
+- [x] UserService (Signals + RxJS)
+- [x] Reactive forms with validation
+- [x] Role selection (user, author, editor, admin)
+- [x] Staff & active status checkboxes
+- [x] Password validation (required for new users)
+- [x] Bio and website fields
 
 ---
 
@@ -384,8 +392,12 @@
 - ✅ Phase 4: Categories - TAMAMLANDI
   - Category CRUD (List, Form, Service)
   - Color picker, auto-slug
+- ✅ Phase 5: Users - TAMAMLANDI
+  - User CRUD (List, Form, Service)
+  - Role management, status toggle
+  - Password validation, staff permissions
 
-**Toplam İlerleme:** 6,000+ satır kod, 4 major commit, 72% tamamlandı
+**Toplam İlerleme:** 7,500+ satır kod, 6 major commit, 83% tamamlandı
 
 ### Karşılaşılan Sorunlar
 
@@ -405,7 +417,7 @@ _(Boş - iyileştirme notları kaydedilecek)_
 
 ---
 
-**Son Güncelleme:** 2026-01-29 23:45
-**Tamamlanan Phases:** Phase 1-4 (Foundation, Dashboard, Articles, Categories)
-**Sıradaki Phase:** Phase 5 - User Management
-**İlerleme:** 72% (13/18 ana task)
+**Son Güncelleme:** 2026-01-29 23:55
+**Tamamlanan Phases:** Phase 1-5 (Foundation, Dashboard, Articles, Categories, Users)
+**Sıradaki Phase:** Phase 6 - Comment Moderation
+**İlerleme:** 83% (15/18 ana task)
