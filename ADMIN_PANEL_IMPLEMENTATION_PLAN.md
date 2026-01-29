@@ -25,34 +25,269 @@
 
 ### Core Principles
 
-1. **Feature-Based Structure**: Her özellik kendi klasöründe, bağımsız modül
-2. **Smart/Dumb Components**:
-   - Smart (Container): API calls, state management, business logic
-   - Dumb (Presentational): Sadece @Input/@Output, UI rendering
-3. **Signal-Based Reactivity**: RxJS yerine Angular Signals (computed, effect)
-4. **Type Safety**: Strict TypeScript, interface/type tanımları
-5. **Single Responsibility**: Her component tek bir işten sorumlu
-6. **DRY (Don't Repeat Yourself)**: Utils, Helpers, Mappers ile kod tekrarını önle
-7. **Clean Code**: Component'ler sade, logic utils'de
-8. **Reusable UI**: Shared components, design system
+1. **Feature-Based Structure**: Her özellik kendi klasöründe, bağımsız
+   - **Core**: Singleton services, interceptors (tüm uygulamada tek örnek)
+   - **Shared**: Reusable UI components, pipes, directives
+   - **Features**: Her iş mantığı kendi klasöründe (Dashboard, Articles, Users)
+
+2. **Standalone Components (Angular 17+)**:
+   - ❌ NgModule kullanma
+   - ✅ Her component standalone
+   - ✅ Sadece ihtiyacı olanı import et (bundle size optimizasyonu)
+
+3. **Smart/Dumb Component Pattern**:
+   - **Smart (Container)**: Service injection, state yönetimi, event handling
+   - **Dumb (Presentational)**: Sadece `@Input()` / `@Output()`, saf UI rendering
+   - ❌ Dumb component'te HTTP çağrısı YAPMA
+   - ❌ Dumb component'te business logic YAPMA
+
+4. **Signals + RxJS Hibrit Yaklaşım** ⭐ (Kritik!)
+   - **Service içinde (private)**: RxJS ile asenkron işlemler
+   - **Dışarıya (public)**: Signals ile state
+   - ❌ Component'lere Observable sızdırma
+   - ❌ Template'te `async` pipe kullanma
+   - ✅ Service'te Observable → Signal dönüşümü
+
+5. **Service Sorumluluğu**:
+   - Business logic SADECE service katmanında
+   - Feature-based services (AuthService, ArticleService, CategoryService)
+   - ❌ Tek serviste tüm işlemler (God Service)
+
+6. **Type Safety**: Strict TypeScript, interface/type tanımları
+
+7. **Performance First**:
+   - ✅ `ChangeDetectionStrategy.OnPush` (varsayılan)
+   - ✅ `trackBy` fonksiyonları (*ngFor)
+   - ✅ Lazy loading (route-based)
+
+8. **Memory Leak Prevention**:
+   - ❌ Manuel `.subscribe()` sonrası unutulan `unsubscribe`
+   - ✅ `takeUntil()`, `take(1)`, `inject(DestroyRef)`
+   - ✅ Signals (otomatik cleanup)
+
+9. **Single Responsibility**: Her component/service tek bir işten sorumlu
+
+10. **DRY**: Utils, Helpers, Mappers ile kod tekrarını önle
 
 ### Anti-Patterns to Avoid
 
-❌ **God Objects** - Tek component'te tüm logic
-❌ **Prop Drilling** - Signals ile çözülecek
-❌ **Mixed Concerns** - Data fetching + UI aynı yerde
-❌ **Any Types** - Strict typing kullan
-❌ **Code Duplication** - Aynı kodu farklı yerlerde tekrarlama
-❌ **Inline Logic** - Complex logic component içinde değil, utils'de
-❌ **Magic Numbers/Strings** - Constants kullan
+#### ❌ Component Anti-Patterns
+
+1. **HTTP İstekleri Component'te**
+   ```typescript
+   // ❌ YAPMA
+   export class ArticleListComponent {
+     ngOnInit() {
+       this.http.get('/api/articles').subscribe(...);
+     }
+   }
+
+   // ✅ YAP
+   export class ArticleListComponent {
+     constructor(private articleService: ArticleService) {}
+     ngOnInit() {
+       this.articleService.loadArticles();
+     }
+   }
+   ```
+
+2. **Complex Logic Component İçinde**
+   ```typescript
+   // ❌ YAPMA
+   export class ArticleListComponent {
+     filterAndSortArticles() {
+       // 50 satır filtreleme ve sıralama logic
+     }
+   }
+
+   // ✅ YAP - Utils kullan
+   export class ArticleListComponent {
+     filterAndSortArticles() {
+       return ArrayUtils.sortBy(
+         this.articles().filter(...),
+         'createdAt',
+         'desc'
+       );
+     }
+   }
+   ```
+
+3. **Observable Sızdırma**
+   ```typescript
+   // ❌ YAPMA
+   export class ArticleService {
+     articles$ = this.http.get<Article[]>('/api/articles');
+   }
+
+   // Component'te
+   articles$ = this.articleService.articles$;
+   // Template: {{ articles$ | async }}
+
+   // ✅ YAP - Signal kullan
+   export class ArticleService {
+     private _articles = signal<Article[]>([]);
+     articles = this._articles.asReadonly();
+
+     loadArticles() {
+       this.http.get<Article[]>('/api/articles')
+         .subscribe(data => this._articles.set(data));
+     }
+   }
+   ```
+
+4. **Default Change Detection**
+   ```typescript
+   // ❌ YAPMA
+   @Component({
+     selector: 'app-article-list',
+     // changeDetection yok
+   })
+
+   // ✅ YAP
+   @Component({
+     selector: 'app-article-list',
+     changeDetection: ChangeDetectionStrategy.OnPush
+   })
+   ```
+
+5. **Memory Leaks**
+   ```typescript
+   // ❌ YAPMA
+   export class Component {
+     ngOnInit() {
+       this.someService.data$.subscribe(...);
+       // unsubscribe yok!
+     }
+   }
+
+   // ✅ YAP
+   export class Component {
+     private destroy$ = inject(DestroyRef);
+
+     ngOnInit() {
+       this.someService.data$
+         .pipe(takeUntilDestroyed(this.destroy$))
+         .subscribe(...);
+     }
+   }
+   ```
+
+#### ❌ Service Anti-Patterns
+
+1. **God Service**
+   ```typescript
+   // ❌ YAPMA - Tek serviste her şey
+   export class AppService {
+     login() {...}
+     getArticles() {...}
+     processPayment() {...}
+   }
+
+   // ✅ YAP - Feature-based
+   export class AuthService { login() {...} }
+   export class ArticleService { getArticles() {...} }
+   export class PaymentService { processPayment() {...} }
+   ```
+
+2. **BehaviorSubject Abuse**
+   ```typescript
+   // ❌ YAPMA - Basit state için BehaviorSubject
+   private articlesSubject = new BehaviorSubject<Article[]>([]);
+   articles$ = this.articlesSubject.asObservable();
+
+   // ✅ YAP - Signal kullan
+   private _articles = signal<Article[]>([]);
+   articles = this._articles.asReadonly();
+   ```
+
+3. **toSignal/toObservable Her Yerde**
+   ```typescript
+   // ❌ YAPMA
+   articles = toSignal(this.http.get(...));
+
+   // ✅ YAP - Service'te dönüşüm
+   loadArticles() {
+     this.http.get(...).subscribe(data => this._articles.set(data));
+   }
+   ```
+
+#### ❌ Diğer Anti-Patterns
+
+- **God Objects** - Tek component'te tüm logic
+- **Code Duplication** - Aynı kodu farklı yerlerde tekrarlama
+- **Magic Numbers/Strings** - Constants kullan
+- **Any Types** - Strict typing kullan
+- **SharedModule ile Bundle Bloat** - Standalone components kullan
+- **Manuel Change Detection** - `ChangeDetectorRef.detectChanges()` çağırma
 
 ---
 
 ## 📁 Klasör Yapısı
 
+> **Yapı:** Core (Singleton) → Shared (Reusable) → Features (Business Logic)
+
 ```
 frontend/src/app/
-├── features/                          # Feature modules
+├── core/                              # 🔒 CORE: Singleton services (app-wide)
+│   ├── api/
+│   │   ├── api.service.ts             # HTTP interceptor, base API
+│   │   └── api.interceptor.ts         # Auth token, error handling
+│   ├── auth/
+│   │   ├── auth.service.ts            # Login/logout, token management
+│   │   └── auth.guard.ts              # Route protection
+│   └── state/
+│       └── admin-state.service.ts     # Global admin state (signals)
+│
+├── shared/                            # 🔄 SHARED: Reusable components/utils
+│   ├── ui/                            # Design system (standalone)
+│   │   ├── button/
+│   │   │   ├── button.component.ts    # Standalone, OnPush
+│   │   │   └── button.component.html
+│   │   ├── card/
+│   │   ├── table/
+│   │   ├── form-field/
+│   │   ├── modal/
+│   │   ├── toast/
+│   │   ├── loading-spinner/
+│   │   ├── empty-state/
+│   │   └── confirmation-dialog/
+│   │
+│   ├── utils/                         # Pure functions
+│   │   ├── date.utils.ts
+│   │   ├── string.utils.ts
+│   │   ├── array.utils.ts
+│   │   ├── validation.utils.ts
+│   │   ├── file.utils.ts
+│   │   └── number.utils.ts
+│   │
+│   ├── helpers/                       # Stateful helpers
+│   │   ├── form.helper.ts
+│   │   ├── http.helper.ts
+│   │   ├── storage.helper.ts
+│   │   └── notification.helper.ts
+│   │
+│   ├── mappers/                       # Data transformation
+│   │   ├── article.mapper.ts
+│   │   ├── user.mapper.ts
+│   │   ├── category.mapper.ts
+│   │   └── analytics.mapper.ts
+│   │
+│   ├── constants/                     # App-wide constants
+│   │   ├── api.constants.ts
+│   │   ├── app.constants.ts
+│   │   ├── routes.constants.ts
+│   │   └── validation.constants.ts
+│   │
+│   ├── pipes/                         # Utility pipes (standalone)
+│   │   ├── date-ago.pipe.ts
+│   │   ├── truncate.pipe.ts
+│   │   └── highlight.pipe.ts
+│   │
+│   └── directives/                    # Utility directives (standalone)
+│       ├── tooltip.directive.ts
+│       └── lazy-load.directive.ts
+│
+└── features/                          # ⚡ FEATURES: Business logic (isolated)
 │   └── admin/                         # Admin panel feature
 │       ├── admin.routes.ts            # Admin routing
 │       ├── layout/                    # Layout components
@@ -1205,17 +1440,142 @@ Toplam: ~1 gün
 
 ## 🧩 Component Patterns
 
+> **Temel Kural:** Component = UI + Event Handler, Service = Data + Business Logic
+
+### ⭐ Signals + RxJS Hibrit Pattern (Zorunlu!)
+
+**Kural:** Service içinde RxJS (mutfak), dışarıya Signals (vitrin)
+
+#### Service Pattern (Doğru Yapı)
+
+```typescript
+// features/admin/content/articles/services/article.service.ts
+import { Injectable, signal, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { finalize, catchError } from 'rxjs/operators';
+import { ArticleMapper } from '@shared/mappers/article.mapper';
+import { HttpHelper } from '@shared/helpers/http.helper';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ArticleService {
+  private http = inject(HttpClient);
+
+  // 1️⃣ PRIVATE State (Internal - Writable)
+  private _articles = signal<Article[]>([]);
+  private _isLoading = signal(false);
+  private _error = signal<string | null>(null);
+
+  // 2️⃣ PUBLIC State (External - Readonly)
+  articles = this._articles.asReadonly();
+  isLoading = this._isLoading.asReadonly();
+  error = this._error.asReadonly();
+
+  // 3️⃣ Computed Signals
+  articleCount = computed(() => this._articles().length);
+  publishedArticles = computed(() =>
+    this._articles().filter(a => a.status === 'published')
+  );
+
+  // 4️⃣ RxJS Logic (Private - Async Operations)
+  loadArticles(filters: ArticleFilters) {
+    this._isLoading.set(true);
+    this._error.set(null);
+
+    const params = HttpHelper.buildQueryParams(filters);
+
+    this.http.get<ArticleApiResponse[]>(`/api/v1/articles?${params}`)
+      .pipe(
+        // RxJS operators burada
+        finalize(() => this._isLoading.set(false)),
+        catchError(error => {
+          this._error.set(HttpHelper.handleError(error));
+          return of([]);
+        })
+      )
+      .subscribe(apiData => {
+        // API response → Domain model (Mapper kullan)
+        const articles = ArticleMapper.toDomainList(apiData);
+        this._articles.set(articles);
+      });
+  }
+
+  // Single article by ID
+  loadArticle(id: number) {
+    this._isLoading.set(true);
+
+    return this.http.get<ArticleApiResponse>(`/api/v1/articles/${id}`)
+      .pipe(
+        finalize(() => this._isLoading.set(false))
+      )
+      .subscribe(apiData => {
+        const article = ArticleMapper.toDomain(apiData);
+        // Update state
+        this._articles.update(articles => {
+          const index = articles.findIndex(a => a.id === id);
+          if (index >= 0) {
+            articles[index] = article;
+          }
+          return [...articles];
+        });
+      });
+  }
+
+  // Create article
+  createArticle(formData: ArticleFormData) {
+    this._isLoading.set(true);
+
+    const apiRequest = ArticleMapper.toApiRequest(formData);
+
+    return this.http.post<ArticleApiResponse>('/api/v1/articles', apiRequest)
+      .pipe(
+        finalize(() => this._isLoading.set(false))
+      )
+      .subscribe(apiData => {
+        const newArticle = ArticleMapper.toDomain(apiData);
+        this._articles.update(articles => [newArticle, ...articles]);
+      });
+  }
+
+  // Delete article
+  deleteArticle(id: number) {
+    return this.http.delete(`/api/v1/articles/${id}`)
+      .subscribe(() => {
+        this._articles.update(articles =>
+          articles.filter(a => a.id !== id)
+        );
+      });
+  }
+}
+```
+
+**✅ Bu Pattern'in Avantajları:**
+- Component'e Observable sızdırmıyor
+- async pipe yok, template'te sadece signal
+- RxJS sadece service içinde (encapsulation)
+- Type-safe mapper kullanımı
+- Centralized error handling
+- Computed signals ile derived state
+
+---
+
 ### Smart Component (Container) Example
 
 ```typescript
-// article-list.component.ts
-import { Component, signal, computed } from '@angular/core';
-import { ArticleService } from './services/article.service';
-import { Article, ArticleFilters } from './models/article.types';
+// features/admin/content/articles/article-list/article-list.component.ts
+import { Component, signal, computed, inject, effect } from '@angular/core';
+import { ChangeDetectionStrategy } from '@angular/core';
+import { ArticleService } from '../services/article.service';
+import { ArticleFilters } from '../models/article.types';
+import { ArticleTableComponent } from './components/article-table.component';
+import { ArticleFiltersComponent } from './components/article-filters.component';
+import { BulkActionsComponent } from './components/bulk-actions.component';
 
 @Component({
   selector: 'app-article-list',
-  standalone: true,
+  standalone: true, // ✅ Standalone
+  changeDetection: ChangeDetectionStrategy.OnPush, // ✅ Performance
   imports: [
     ArticleTableComponent,
     ArticleFiltersComponent,
@@ -1223,20 +1583,23 @@ import { Article, ArticleFilters } from './models/article.types';
   ],
   template: `
     <div class="article-list-container">
+      <!-- Filters -->
       <app-article-filters
         [filters]="filters()"
         (filtersChange)="onFiltersChange($event)"
       />
 
+      <!-- Table -->
       <app-article-table
-        [articles]="articles()"
-        [loading]="loading()"
+        [articles]="articleService.articles()"
+        [loading]="articleService.isLoading()"
         [selectedIds]="selectedIds()"
         (selectionChange)="onSelectionChange($event)"
         (editArticle)="onEditArticle($event)"
         (deleteArticle)="onDeleteArticle($event)"
       />
 
+      <!-- Bulk Actions -->
       <app-bulk-actions
         [selectedCount]="selectedCount()"
         [disabled]="selectedCount() === 0"
@@ -1247,9 +1610,10 @@ import { Article, ArticleFilters } from './models/article.types';
   `
 })
 export class ArticleListComponent {
-  // Signals
-  articles = signal<Article[]>([]);
-  loading = signal(false);
+  // ✅ Service injection (modern way)
+  articleService = inject(ArticleService);
+
+  // ✅ Local UI state (not data!)
   selectedIds = signal<Set<number>>(new Set());
   filters = signal<ArticleFilters>({
     status: 'all',
@@ -1257,35 +1621,24 @@ export class ArticleListComponent {
     search: ''
   });
 
-  // Computed signals
+  // ✅ Computed signals
   selectedCount = computed(() => this.selectedIds().size);
-  filteredArticles = computed(() => {
-    const filters = this.filters();
-    return this.articles().filter(article => {
-      // Filter logic
-      return true;
+
+  // ✅ Effect - filter değişince otomatik load
+  constructor() {
+    effect(() => {
+      const currentFilters = this.filters();
+      this.articleService.loadArticles(currentFilters);
     });
-  });
-
-  constructor(private articleService: ArticleService) {
-    this.loadArticles();
   }
 
-  // Data fetching (business logic)
-  async loadArticles() {
-    this.loading.set(true);
-    try {
-      const data = await this.articleService.getArticles(this.filters());
-      this.articles.set(data);
-    } finally {
-      this.loading.set(false);
-    }
-  }
+  // ❌ Data fetching YOK! (Service'te)
+  // ❌ Business logic YOK! (Service'te)
+  // ✅ Sadece event handling
 
-  // Event handlers
   onFiltersChange(filters: ArticleFilters) {
     this.filters.set(filters);
-    this.loadArticles();
+    // Effect otomatik tetiklenecek
   }
 
   onSelectionChange(ids: Set<number>) {
@@ -1294,14 +1647,18 @@ export class ArticleListComponent {
 
   onEditArticle(id: number) {
     // Navigate to editor
+    this.router.navigate(['/admin/articles', id, 'edit']);
   }
 
   onDeleteArticle(id: number) {
-    // Delete logic
+    // ✅ Service method çağır
+    this.articleService.deleteArticle(id);
   }
 
   onBulkPublish() {
-    // Bulk publish logic
+    const ids = Array.from(this.selectedIds());
+    this.articleService.bulkPublish(ids);
+    this.selectedIds.set(new Set()); // Clear selection
   }
 }
 ```
@@ -1309,49 +1666,78 @@ export class ArticleListComponent {
 ### Dumb Component (Presentational) Example
 
 ```typescript
-// article-table.component.ts
-import { Component, input, output } from '@angular/core';
-import { Article } from '../models/article.types';
+// features/admin/content/articles/article-list/components/article-table.component.ts
+import { Component, input, output, computed } from '@angular/core';
+import { ChangeDetectionStrategy } from '@angular/core';
+import { Article } from '../../models/article.types';
+import { DateAgoPipe } from '@shared/pipes/date-ago.pipe';
+import { StatusBadgeComponent } from './status-badge.component';
 
 @Component({
   selector: 'app-article-table',
-  standalone: true,
+  standalone: true, // ✅ Standalone
+  changeDetection: ChangeDetectionStrategy.OnPush, // ✅ Performance
+  imports: [DateAgoPipe, StatusBadgeComponent],
   template: `
-    <table class="w-full">
+    <table class="w-full border-collapse">
       <thead>
-        <tr>
-          <th><input type="checkbox" (change)="toggleAll()" /></th>
-          <th>Başlık</th>
-          <th>Yazar</th>
-          <th>Durum</th>
-          <th>Tarih</th>
-          <th>İşlemler</th>
+        <tr class="bg-gray-100">
+          <th class="p-3 text-left">
+            <input
+              type="checkbox"
+              [checked]="allSelected()"
+              (change)="toggleAll()"
+            />
+          </th>
+          <th class="p-3 text-left">Başlık</th>
+          <th class="p-3 text-left">Yazar</th>
+          <th class="p-3 text-left">Durum</th>
+          <th class="p-3 text-left">Tarih</th>
+          <th class="p-3 text-left">İşlemler</th>
         </tr>
       </thead>
       <tbody>
         @if (loading()) {
-          <tr><td colspan="6">Yükleniyor...</td></tr>
+          <tr>
+            <td colspan="6" class="p-8 text-center text-gray-500">
+              Yükleniyor...
+            </td>
+          </tr>
+        } @else if (articles().length === 0) {
+          <tr>
+            <td colspan="6" class="p-8 text-center text-gray-500">
+              Makale bulunamadı
+            </td>
+          </tr>
         } @else {
           @for (article of articles(); track article.id) {
-            <tr>
-              <td>
+            <tr class="border-b hover:bg-gray-50">
+              <td class="p-3">
                 <input
                   type="checkbox"
                   [checked]="selectedIds().has(article.id)"
                   (change)="toggleSelection(article.id)"
                 />
               </td>
-              <td>{{ article.title }}</td>
-              <td>{{ article.author }}</td>
-              <td>
+              <td class="p-3 font-medium">{{ article.title }}</td>
+              <td class="p-3">{{ article.author.name }}</td>
+              <td class="p-3">
                 <app-status-badge [status]="article.status" />
               </td>
-              <td>{{ article.created_at | dateAgo }}</td>
-              <td>
-                <button (click)="editArticle.emit(article.id)">
+              <td class="p-3 text-sm text-gray-600">
+                {{ article.createdAt | dateAgo }}
+              </td>
+              <td class="p-3 space-x-2">
+                <button
+                  class="text-blue-600 hover:underline"
+                  (click)="editArticle.emit(article.id)"
+                >
                   Düzenle
                 </button>
-                <button (click)="deleteArticle.emit(article.id)">
+                <button
+                  class="text-red-600 hover:underline"
+                  (click)="deleteArticle.emit(article.id)"
+                >
                   Sil
                 </button>
               </td>
@@ -1363,15 +1749,26 @@ import { Article } from '../models/article.types';
   `
 })
 export class ArticleTableComponent {
-  // Inputs (signal-based)
+  // ✅ Modern signal-based inputs (Angular 17+)
   articles = input.required<Article[]>();
-  loading = input(false);
+  loading = input<boolean>(false);
   selectedIds = input.required<Set<number>>();
 
-  // Outputs
+  // ✅ Outputs
   selectionChange = output<Set<number>>();
   editArticle = output<number>();
   deleteArticle = output<number>();
+
+  // ✅ Computed (derived state)
+  allSelected = computed(() => {
+    const articles = this.articles();
+    const selected = this.selectedIds();
+    return articles.length > 0 && articles.every(a => selected.has(a.id));
+  });
+
+  // ❌ HTTP çağrısı YOK
+  // ❌ Business logic YOK
+  // ✅ Sadece UI logic
 
   toggleSelection(id: number) {
     const newSet = new Set(this.selectedIds());
@@ -1384,10 +1781,138 @@ export class ArticleTableComponent {
   }
 
   toggleAll() {
-    // Toggle all logic
+    const articles = this.articles();
+    const selected = this.selectedIds();
+
+    if (this.allSelected()) {
+      // Deselect all
+      this.selectionChange.emit(new Set());
+    } else {
+      // Select all
+      const allIds = new Set(articles.map(a => a.id));
+      this.selectionChange.emit(allIds);
+    }
   }
 }
 ```
+
+---
+
+### 🛡️ Memory Leak Prevention
+
+**Problem:** RxJS subscribe() sonrası unsubscribe unutulması → Memory leak
+
+#### ❌ YAPMA - Manuel Subscribe
+
+```typescript
+export class BadComponent {
+  ngOnInit() {
+    this.articleService.articles$.subscribe(articles => {
+      // ...
+    });
+    // ❌ unsubscribe yok! Memory leak!
+  }
+}
+```
+
+#### ✅ YAP - Çözüm 1: Signals Kullan (En İyi)
+
+```typescript
+export class GoodComponent {
+  articleService = inject(ArticleService);
+
+  // ✅ Service'teki signal'i direkt kullan
+  // Otomatik cleanup, memory leak yok!
+  articles = this.articleService.articles;
+}
+```
+
+#### ✅ YAP - Çözüm 2: takeUntilDestroyed
+
+```typescript
+import { Component, inject, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+
+export class SearchComponent {
+  private destroyRef = inject(DestroyRef);
+  searchService = inject(SearchService);
+
+  ngOnInit() {
+    // Form value changes gibi durumlarda
+    this.searchForm.valueChanges
+      .pipe(
+        debounceTime(300),
+        takeUntilDestroyed(this.destroyRef) // ✅ Otomatik unsubscribe
+      )
+      .subscribe(value => {
+        this.searchService.search(value);
+      });
+  }
+}
+```
+
+#### ✅ YAP - Çözüm 3: take(1)
+
+```typescript
+export class Component {
+  loadOnce() {
+    this.http.get('/api/data')
+      .pipe(take(1)) // ✅ Tek seferlik, otomatik unsubscribe
+      .subscribe(data => {
+        this.data.set(data);
+      });
+  }
+}
+```
+
+#### 📋 RxJS Kullanım Kuralları
+
+**RxJS Kullan:**
+- ✅ HTTP istekleri (HttpClient)
+- ✅ Zamana bağlı işlemler (debounceTime, throttleTime, interval)
+- ✅ Karmaşık akış birleştirmeleri (switchMap, forkJoin, combineLatest)
+- ✅ Form value changes
+- ✅ Event-based akışlar
+
+**RxJS Kullanma:**
+- ❌ Basit state tutma (Signal kullan)
+- ❌ Component'e Observable sızdırma (Signal'e dönüştür)
+- ❌ Template'te async pipe (Signal kullan)
+
+---
+
+### 📋 Best Practices Summary
+
+#### Component Checklist
+
+- [ ] `standalone: true`
+- [ ] `changeDetection: ChangeDetectionStrategy.OnPush`
+- [ ] Signal-based `input()` / `output()`
+- [ ] Service'ten signal'leri tüket (Observable değil)
+- [ ] HTTP çağrısı YOK
+- [ ] Business logic YOK
+- [ ] `*ngFor` ile `trackBy` kullan
+- [ ] Memory leak yok (takeUntilDestroyed veya signal)
+
+#### Service Checklist
+
+- [ ] Feature-based (AuthService, ArticleService, etc.)
+- [ ] Private writableSignal, public asReadonly()
+- [ ] RxJS logic içeride (private)
+- [ ] Signals dışarıda (public)
+- [ ] Mapper kullan (API ↔ Domain)
+- [ ] Helper kullan (HttpHelper, etc.)
+- [ ] Type-safe (strict interfaces)
+- [ ] Error handling (catchError, finalize)
+
+#### General Checklist
+
+- [ ] Utils kullan (kod tekrarı yok)
+- [ ] Constants kullan (magic string/number yok)
+- [ ] Computed signals (derived state)
+- [ ] Effect kullan (side effects)
+- [ ] Core/Shared/Features ayrımı
+- [ ] Bundle size optimize (lazy loading)
 
 ---
 
@@ -1669,19 +2194,49 @@ export class ArticleService {
 
 ## 📚 Technical Stack
 
-### Frontend
-- **Framework:** Angular 17.3
-- **State:** Signals (native Angular)
+### Frontend (Angular 17+)
+
+#### Core
+- **Framework:** Angular 17.3+ (Latest)
+- **Architecture:** Standalone Components (no NgModule)
+- **State Management:** Signals (native) + RxJS (hybrid)
+- **Change Detection:** OnPush (default)
+- **TypeScript:** Strict mode
+
+#### UI & Styling
 - **Styling:** TailwindCSS
 - **Charts:** ApexCharts / Chart.js
-- **Editor:** TinyMCE / Quill
-- **Forms:** Reactive Forms
-- **HTTP:** HttpClient (async/await pattern)
+- **Editor:** TinyMCE / Quill (WYSIWYG)
+- **Icons:** Heroicons / Font Awesome
 
-### Backend (existing)
-- Django + DRF
-- PostgreSQL
-- JWT Authentication
+#### Forms & Validation
+- **Forms:** Reactive Forms (signal-based)
+- **Validation:** Custom validators + Utils
+
+#### Data & HTTP
+- **HTTP:** HttpClient + Interceptors
+- **Pattern:** Service (RxJS) → Signal → Component
+- **Mappers:** API ↔ Domain transformation
+- **Error Handling:** HttpHelper
+
+#### Performance
+- **Lazy Loading:** Route-based code splitting
+- **OnPush:** All components
+- **TrackBy:** All *ngFor loops
+- **Bundle Size:** Standalone components (tree-shaking)
+
+#### Developer Experience
+- **Code Organization:** Core / Shared / Features
+- **Utils/Helpers:** Reusable logic
+- **Type Safety:** Strict TypeScript, no `any`
+- **Clean Code:** DRY, SOLID principles
+
+### Backend (Existing)
+- **Framework:** Django 5.x + Django REST Framework
+- **Database:** PostgreSQL
+- **Authentication:** JWT (djangorestframework-simplejwt)
+- **API:** RESTful, versioned (/api/v1/)
+- **Storage:** Local / S3 (media files)
 
 ---
 
