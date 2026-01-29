@@ -13,11 +13,11 @@
 - [x] **PHASE 3:** Article Management - 3/3 ✅
 - [x] **PHASE 4:** Category Management - 1/1 ✅ (Media skip edildi)
 - [x] **PHASE 5:** User Management - 2/2 ✅
-- [ ] **PHASE 6:** Comment Moderation - 0/1
+- [x] **PHASE 6:** Comment Moderation - 1/1 ✅
 - [ ] **PHASE 7:** Analytics - 0/1
 - [ ] **PHASE 8:** Settings - 0/1
 
-**Toplam İlerleme:** 15/18 ana task (83% tamamlandı)
+**Toplam İlerleme:** 16/18 ana task (89% tamamlandı)
 
 ---
 
@@ -330,15 +330,20 @@
 
 ---
 
-## 🎯 PHASE 6: Comment Moderation
+## 🎯 PHASE 6: Comment Moderation ✅ TAMAMLANDI
 
 **Süre:** ~1.5 gün
+**Tamamlanma:** 2026-01-29
 
-### 6.1 Comment Queue
+### 6.1 Comment Moderation ✅
 
-- [ ] CommentQueueComponent (Smart)
-- [ ] CommentCardComponent (Dumb)
-- [ ] ModerationToolbarComponent
+- [x] comment-list.component.ts (Smart)
+- [x] CommentService (Signals + RxJS)
+- [x] CommentMapper (API ↔ Domain transformation)
+- [x] Bulk moderation actions (approve, reject, spam)
+- [x] Detail modal for comments
+- [x] Pending comments filter
+- [x] Status badges and tracking
 
 ---
 
@@ -396,8 +401,12 @@
   - User CRUD (List, Form, Service)
   - Role management, status toggle
   - Password validation, staff permissions
+- ✅ Phase 6: Comments - TAMAMLANDI
+  - Comment moderation system
+  - Bulk actions, status management
+  - Detail modal, pending filter
 
-**Toplam İlerleme:** 7,500+ satır kod, 6 major commit, 83% tamamlandı
+**Toplam İlerleme:** 8,200+ satır kod, 7 major commit, 89% tamamlandı
 
 ### Karşılaşılan Sorunlar
 
@@ -417,7 +426,7 @@ _(Boş - iyileştirme notları kaydedilecek)_
 
 ---
 
-**Son Güncelleme:** 2026-01-29 23:55
-**Tamamlanan Phases:** Phase 1-5 (Foundation, Dashboard, Articles, Categories, Users)
-**Sıradaki Phase:** Phase 6 - Comment Moderation
-**İlerleme:** 83% (15/18 ana task)
+**Son Güncelleme:** 2026-01-30 00:05
+**Tamamlanan Phases:** Phase 1-6 (Foundation, Dashboard, Articles, Categories, Users, Comments)
+**Sıradaki Phase:** Phase 7 - Analytics (Optional - Dashboard'da var)
+**İlerleme:** 89% (16/18 ana task)
