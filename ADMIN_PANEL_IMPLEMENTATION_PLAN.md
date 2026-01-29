@@ -2240,6 +2240,62 @@ export class ArticleService {
 
 ---
 
+## 📖 Referanslar ve Kaynaklar
+
+Bu planın oluşturulmasında aşağıdaki kaynaklar referans alınmıştır:
+
+### Angular Architecture & Patterns
+
+**State Management**
+- [Angular State Management with RxJS and Signals](https://medium.com/@bananicabananica/angular-state-management-with-rxjs-and-signals-and-rant-592dc8ddcef3)
+  - Signals + RxJS hibrit pattern
+  - Service katmanında state yönetimi
+  - Best practices ve anti-patterns
+
+**Feature-Based Design**
+- [Angular Architecture That Clicks: Embracing Feature-Based Design](https://dev.to/sanket00123/angular-architecture-that-clicks-embracing-feature-based-design-4eje)
+  - Feature-based klasör yapısı
+  - Modüler mimari yaklaşımı
+  - Scalable kod organizasyonu
+
+**Component Patterns**
+- [Smart vs Presentation Components: What's the Difference?](https://blog.angular-university.io/angular-2-smart-components-vs-presentation-components-whats-the-difference-when-to-use-each-and-why/)
+  - Smart/Dumb component ayrımı
+  - Container vs Presentational pattern
+  - Best practices
+
+### Angular Core Features
+
+**Forms**
+- [Angular Reactive Forms (v17)](https://v17.angular.io/guide/reactive-forms)
+  - Signal-based reactive forms
+  - Form validation
+  - Dynamic forms
+
+**Server-Side Rendering**
+- [Angular SSR Guide (v17)](https://v17.angular.io/guide/ssr)
+  - Server-side rendering setup
+  - Performance optimization
+  - SEO improvements
+
+### Önerilen Ek Kaynaklar
+
+**Angular Official Docs**
+- [Angular Signals](https://angular.dev/guide/signals)
+- [Standalone Components](https://angular.dev/guide/components/importing)
+- [Change Detection](https://angular.dev/best-practices/runtime-performance)
+- [Dependency Injection](https://angular.dev/guide/di)
+
+**Best Practices**
+- [Angular Coding Style Guide](https://angular.dev/style-guide)
+- [Performance Best Practices](https://angular.dev/best-practices/runtime-performance)
+
+**Community Resources**
+- [Angular Blog](https://blog.angular.io/)
+- [Angular University](https://blog.angular-university.io/)
+
+---
+
 ## 🚦 Next Steps
 
 1. **Review bu planı** - Feedback ver, eksik var mı?
