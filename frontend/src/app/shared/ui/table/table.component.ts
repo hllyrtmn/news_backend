@@ -49,13 +49,13 @@ export interface TableSort {
               >
                 @if (column.sortable) {
                   <button
-                    (click)="onSort(column.key as string)"
+                    (click)="handleSort(column)"
                     class="group inline-flex items-center space-x-1 hover:text-gray-900"
                   >
                     <span>{{ column.label }}</span>
                     <span class="ml-2 flex-none rounded text-gray-400 group-hover:text-gray-900">
                       @if (sort?.key === column.key) {
-                        @if (sort.order === 'asc') {
+                        @if (sort?.order === 'asc') {
                           <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" />
                           </svg>
@@ -190,6 +190,12 @@ export class TableComponent<T = any> {
 
   isSelected(row: T): boolean {
     return this.selectedRows.includes(row);
+  }
+
+  handleSort(column: TableColumn<T>): void {
+    const key = String(column.key);
+    const newOrder = this.sort?.key === key && this.sort?.order === 'asc' ? 'desc' : 'asc';
+    this.sortChange.emit({ key, order: newOrder });
   }
 
   onSort(key: string): void {

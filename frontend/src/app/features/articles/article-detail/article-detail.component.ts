@@ -54,7 +54,7 @@ import { ADMIN_ROUTES } from '../../../shared/constants/routes.constants';
               Düzenle
             </a>
             <a
-              [routerLink]="articlesRoute"
+              [routerLink]="articlesRoute.list"
               class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               Geri Dön
@@ -81,15 +81,15 @@ import { ADMIN_ROUTES } from '../../../shared/constants/routes.constants';
               <div body class="space-y-3">
                 <div class="flex items-center justify-between">
                   <span class="text-sm text-gray-600">Görüntülenme</span>
-                  <span class="font-medium text-gray-900">{{ article()!.viewCount }}</span>
+                  <span class="font-medium text-gray-900">{{ article()!.viewsCount }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                   <span class="text-sm text-gray-600">Beğeni</span>
-                  <span class="font-medium text-gray-900">{{ article()!.likeCount }}</span>
+                  <span class="font-medium text-gray-900">{{ article()!.likesCount }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                   <span class="text-sm text-gray-600">Yorum</span>
-                  <span class="font-medium text-gray-900">{{ article()!.commentCount }}</span>
+                  <span class="font-medium text-gray-900">{{ article()!.commentsCount }}</span>
                 </div>
               </div>
             </app-card>
@@ -105,7 +105,7 @@ import { ADMIN_ROUTES } from '../../../shared/constants/routes.constants';
                 @if (article()!.category) {
                   <div>
                     <div class="text-xs text-gray-500 mb-1">Kategori</div>
-                    <div class="text-sm font-medium text-gray-900">{{ article()!.category.name }}</div>
+                    <div class="text-sm font-medium text-gray-900">{{ article()?.category?.name }}</div>
                   </div>
                 }
                 <div>

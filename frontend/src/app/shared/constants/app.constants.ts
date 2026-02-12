@@ -66,7 +66,7 @@ export const APP_CONFIG = {
 export const ARTICLE_STATUS = {
   DRAFT: 'draft',
   PUBLISHED: 'published',
-  SCHEDULED: 'scheduled',
+  PENDING: 'pending',
   ARCHIVED: 'archived',
 } as const;
 

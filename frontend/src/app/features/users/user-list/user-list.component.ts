@@ -142,7 +142,7 @@ interface UserFilters {
         (rowClick)="viewUser($event)"
       >
         @for (user of users(); track user.id) {
-          <ng-container [attr.column-fullName]="user.id">
+          <ng-container >
             <div class="flex items-center">
               @if (user.avatar) {
                 <img
@@ -162,7 +162,7 @@ interface UserFilters {
             </div>
           </ng-container>
 
-          <ng-container [attr.column-email]="user.id">
+          <ng-container >
             <a
               [href]="'mailto:' + user.email"
               class="text-sm text-blue-600 hover:text-blue-700"
@@ -172,13 +172,13 @@ interface UserFilters {
             </a>
           </ng-container>
 
-          <ng-container [attr.column-role]="user.id">
+          <ng-container >
             <span [class]="getRoleBadgeClass(user.role || 'user')">
               {{ getRoleLabel(user.role || 'user') }}
             </span>
           </ng-container>
 
-          <ng-container [attr.column-isActive]="user.id">
+          <ng-container >
             <button
               (click)="toggleUserStatus(user); $event.stopPropagation()"
               [class]="getStatusBadgeClass(user.isActive)"
@@ -187,7 +187,7 @@ interface UserFilters {
             </button>
           </ng-container>
 
-          <ng-container [attr.column-lastLogin]="user.id">
+          <ng-container >
             @if (user.lastLogin) {
               <span class="text-sm text-gray-500">{{ user.lastLogin | dateAgo }}</span>
             } @else {
@@ -195,7 +195,7 @@ interface UserFilters {
             }
           </ng-container>
 
-          <div actions>
+          <div>
             <div class="flex items-center space-x-3">
               <a
                 [routerLink]="['/admin/users', user.id, 'edit']"

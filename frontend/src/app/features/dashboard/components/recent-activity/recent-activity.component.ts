@@ -33,8 +33,9 @@ import { RecentActivity, ActivityType } from '../../types/dashboard.types';
         </div>
       } @else if (activities.length === 0) {
         <app-empty-state
-          icon="clock"
-          message="Henüz aktivite bulunmuyor"
+          icon="document"
+          title="Henüz aktivite bulunmuyor"
+          description="Bu kullanıcının geçmiş işlem kayıtları yok."
         />
       } @else {
         <div class="flow-root">

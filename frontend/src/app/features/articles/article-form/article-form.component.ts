@@ -66,7 +66,7 @@ import { ADMIN_ROUTES } from '../../../shared/constants/routes.constants';
           </p>
         </div>
         <a
-          [routerLink]="articlesRoute"
+          [routerLink]="articlesRoute.list"
           class="text-sm font-medium text-gray-600 hover:text-gray-900"
         >
           ← Geri Dön
@@ -495,7 +495,6 @@ export class ArticleFormComponent implements OnInit {
 
     const formData: ArticleFormData = {
       title: this.form.value.title,
-      slug: this.form.value.slug,
       excerpt: this.form.value.excerpt || '',
       content: this.form.value.content,
       status: this.form.value.status,

@@ -29,7 +29,7 @@ import { Comment, CommentStatus } from '../../../shared/models/comment.types';
 
 interface CommentFilters {
   search?: string;
-  status?: CommentStatus | '';
+  status?: CommentStatus;
   articleId?: number;
 }
 
@@ -171,7 +171,7 @@ interface CommentFilters {
         (rowClick)="viewComment($event)"
       >
         @for (comment of comments(); track comment.id) {
-          <ng-container [attr.column-content]="comment.id">
+          <ng-container >
             <div>
               <p class="text-sm text-gray-900">{{ comment.content | truncate: 100 }}</p>
               <div class="mt-1 flex items-center space-x-2 text-xs text-gray-500">
@@ -188,17 +188,17 @@ interface CommentFilters {
             </div>
           </ng-container>
 
-          <ng-container [attr.column-status]="comment.id">
+          <ng-container >
             <span [class]="getStatusBadgeClass(comment.status)">
               {{ getStatusLabel(comment.status) }}
             </span>
           </ng-container>
 
-          <ng-container [attr.column-createdAt]="comment.id">
+          <ng-container >
             <span class="text-sm text-gray-500">{{ comment.createdAt | dateAgo }}</span>
           </ng-container>
 
-          <div actions>
+          <div >
             <div class="flex items-center space-x-2">
               @if (comment.status === 'pending') {
                 <button

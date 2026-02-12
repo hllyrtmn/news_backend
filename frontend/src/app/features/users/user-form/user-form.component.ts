@@ -65,7 +65,7 @@ import { ADMIN_ROUTES } from '../../../shared/constants/routes.constants';
           </p>
         </div>
         <a
-          [routerLink]="usersRoute"
+          [routerLink]="usersRoute.list"
           class="text-sm font-medium text-gray-600 hover:text-gray-900"
         >
           ← Geri Dön
@@ -329,7 +329,6 @@ export class UserFormComponent implements OnInit {
             isStaff: user.isStaff,
             isActive: user.isActive,
             bio: user.bio,
-            website: user.website,
           });
         }
         this.loading.set(false);
@@ -371,10 +370,8 @@ export class UserFormComponent implements OnInit {
       email: this.form.value.email,
       password: this.form.value.password,
       role: this.form.value.role,
-      isStaff: this.form.value.isStaff,
-      isActive: this.form.value.isActive,
       bio: this.form.value.bio,
-      website: this.form.value.website,
+      isActive: this.form.value.isActive,
     };
 
     const request = this.isEditMode()

@@ -8,6 +8,7 @@ import { ArticleStatus } from '../constants/app.constants';
 export interface Author {
   id: number;
   name: string;
+  fullName: string;
   avatar: string | null;
   bio?: string;
 }
@@ -92,9 +93,11 @@ export interface ArticleFormData {
   excerpt?: string;
   categoryId: number | null;
   tagIds: number[];
-  featuredImageId: number | null;
+  featuredImage: number | null;
   status: ArticleStatus;
-  scheduledAt?: string | null;
+  publishedAt?: string | null;
+  metaTitle: string | null,
+  metaDescription: string | null
 }
 
 // Filters

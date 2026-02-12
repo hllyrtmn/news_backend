@@ -54,11 +54,11 @@ export class ArticleService {
       page_size: 20,
     };
 
-    if (params.search) queryParams.search = params.search;
-    if (params.status) queryParams.status = params.status;
-    if (params.category) queryParams.category = params.category;
-    if (params.author) queryParams.author = params.author;
-    if (params.sort) queryParams.ordering = params.order === 'desc' ? `-${params.sort}` : params.sort;
+    if (params.search) queryParams['search'] = params.search;
+    if (params.status) queryParams['status'] = params.status;
+    if (params.category) queryParams['category'] = params.category;
+    if (params.author) queryParams['author'] = params.author;
+    if (params.sort) queryParams['ordering'] = params.order === 'desc' ? `-${params.sort}` : params.sort;
 
     this.http
       .get<{ results: ArticleApiResponse[]; count: number }>(
@@ -79,85 +79,6 @@ export class ArticleService {
           NotificationHelper.showError('Makaleler yüklenemedi');
 
           // Return mock data for development
-          const mockArticles: Article[] = [
-            {
-              id: 1,
-              title: 'Angular 17 Signals ile State Management',
-              slug: 'angular-17-signals-state-management',
-              excerpt: 'Angular 17 ile gelen Signals özelliği ile modern state management nasıl yapılır?',
-              content: 'Lorem ipsum...',
-              featuredImage: null,
-              status: 'published',
-              author: {
-                id: 1,
-                username: 'ahmetyilmaz',
-                email: 'ahmet@example.com',
-                fullName: 'Ahmet Yılmaz',
-                isActive: true,
-              },
-              category: { id: 1, name: 'Angular', slug: 'angular' },
-              tags: [
-                { id: 1, name: 'Angular', slug: 'angular' },
-                { id: 2, name: 'TypeScript', slug: 'typescript' },
-              ],
-              viewCount: 1234,
-              likeCount: 45,
-              commentCount: 12,
-              createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2),
-              updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
-              publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2),
-            },
-            {
-              id: 2,
-              title: 'TypeScript 5.0 Yenilikleri',
-              slug: 'typescript-5-yenilikleri',
-              excerpt: 'TypeScript 5.0 ile gelen yenilikler ve breaking changes',
-              content: 'Lorem ipsum...',
-              featuredImage: null,
-              status: 'published',
-              author: {
-                id: 2,
-                username: 'ayse',
-                email: 'ayse@example.com',
-                fullName: 'Ayşe Kaya',
-                isActive: true,
-              },
-              category: { id: 2, name: 'TypeScript', slug: 'typescript' },
-              tags: [{ id: 2, name: 'TypeScript', slug: 'typescript' }],
-              viewCount: 987,
-              likeCount: 32,
-              commentCount: 8,
-              createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5),
-              updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3),
-              publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5),
-            },
-            {
-              id: 3,
-              title: 'React Server Components Detaylı İnceleme',
-              slug: 'react-server-components',
-              excerpt: 'React Server Components nedir, nasıl çalışır?',
-              content: 'Lorem ipsum...',
-              featuredImage: null,
-              status: 'draft',
-              author: {
-                id: 1,
-                username: 'ahmetyilmaz',
-                email: 'ahmet@example.com',
-                fullName: 'Ahmet Yılmaz',
-                isActive: true,
-              },
-              category: { id: 3, name: 'React', slug: 'react' },
-              tags: [{ id: 3, name: 'React', slug: 'react' }],
-              viewCount: 0,
-              likeCount: 0,
-              commentCount: 0,
-              createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12),
-              updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 6),
-              publishedAt: null,
-            },
-          ];
-          this.articlesSubject.next(mockArticles);
-          this.totalCountSubject.next(mockArticles.length);
           return of({ results: [], count: 0 });
         })
       )

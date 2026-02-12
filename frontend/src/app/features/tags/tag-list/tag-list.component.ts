@@ -1,7 +1,7 @@
 /**
- * Category List Component (Smart)
+ * Tag List Component (Smart)
  *
- * Displays list of categories with CRUD operations
+ * Displays list of tags with CRUD operations
  */
 
 import { Component, OnInit, ChangeDetectionStrategy, inject, signal } from '@angular/core';
@@ -11,7 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 // Services
-import { CategoryService } from '../services/category.service';
+import { AdminTagService, Tag } from '../services/tag.service';
 
 // Components
 import { TableComponent, TableColumn, TableSort } from '../../../shared/ui/table/table.component';
@@ -19,12 +19,8 @@ import { ButtonComponent } from '../../../shared/ui/button/button.component';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { ConfirmationDialogComponent } from '../../../shared/ui/confirmation-dialog/confirmation-dialog.component';
 
-// Types & Constants
-import { Category } from '../../../shared/models/category.types';
-import { ADMIN_ROUTES } from '../../../shared/constants/routes.constants';
-
 @Component({
-  selector: 'app-category-list',
+  selector: 'app-tag-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
@@ -41,19 +37,19 @@ import { ADMIN_ROUTES } from '../../../shared/constants/routes.constants';
       <!-- Header -->
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">Kategoriler</h1>
+          <h1 class="text-2xl font-bold text-gray-900">Etiketler</h1>
           <p class="mt-1 text-sm text-gray-500">
-            Toplam {{ totalCount() }} kategori
+            Toplam {{ totalCount() }} etiket
           </p>
         </div>
         <a
-          [routerLink]="newCategoryRoute"
+          routerLink="/admin/tags/new"
           class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
         >
           <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          Yeni Kategori
+          Yeni Etiket
         </a>
       </div>
 
@@ -63,64 +59,53 @@ import { ADMIN_ROUTES } from '../../../shared/constants/routes.constants';
           type="text"
           [(ngModel)]="searchQuery"
           (ngModelChange)="onSearchChange()"
-          placeholder="Kategori ara..."
+          placeholder="Etiket ara..."
           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
       </div>
 
-      <!-- Categories Table -->
+      <!-- Tags Table -->
       <app-table
         [columns]="columns"
-        [data]="categories()"
+        [data]="tags()"
         [loading]="loading()"
         [hasActions]="true"
         [sort]="currentSort()"
-        emptyText="Kategori bulunamadı"
+        emptyText="Etiket bulunamadı"
         (sortChange)="onSortChange($event)"
-        (rowClick)="editCategory($event)"
+        (rowClick)="editTag($event)"
       >
-        @for (category of categories(); track category.id) {
-          <ng-container >
-            <div class="flex items-center">
-              @if (category.color) {
-                <div
-                  [style.background-color]="category.color"
-                  class="mr-3 h-4 w-4 rounded-full"
-                ></div>
-              }
-              <span class="font-medium text-gray-900">{{ category.name }}</span>
-            </div>
+        @for (tag of tags(); track tag.id) {
+          <ng-container [attr.column-name]="tag.id">
+            <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+              <svg class="mr-1.5 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+              </svg>
+              {{ tag.name }}
+            </span>
           </ng-container>
 
-          <ng-container >
+          <ng-container [attr.column-slug]="tag.id">
             <code class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">
-              {{ category.slug }}
+              {{ tag.slug }}
             </code>
           </ng-container>
 
-          <ng-container >
-            @if (category.description) {
-              <span class="text-sm text-gray-600">{{ category.description }}</span>
-            } @else {
-              <span class="text-sm text-gray-400">-</span>
-            }
+          <ng-container [attr.column-articleCount]="tag.id">
+            <span class="text-sm text-gray-900">{{ tag.articleCount || 0 }}</span>
           </ng-container>
 
-          <ng-container >
-            <span class="text-sm text-gray-900">{{ category.articleCount || 0 }}</span>
-          </ng-container>
-
-          <div >
+          <div actions>
             <div class="flex items-center space-x-3">
               <a
-                [routerLink]="['/admin/categories', category.id, 'edit']"
+                [routerLink]="['/admin/tags', tag.id, 'edit']"
                 class="text-blue-600 hover:text-blue-700"
                 (click)="$event.stopPropagation()"
               >
                 Düzenle
               </a>
               <button
-                (click)="confirmDelete(category); $event.stopPropagation()"
+                (click)="confirmDelete(tag); $event.stopPropagation()"
                 class="text-red-600 hover:text-red-700"
               >
                 Sil
@@ -133,7 +118,7 @@ import { ADMIN_ROUTES } from '../../../shared/constants/routes.constants';
       <!-- Delete Confirmation -->
       @if (showDeleteDialog()) {
         <app-confirmation-dialog
-          title="Kategoriyi Sil"
+          title="Etiketi Sil"
           [message]="deleteDialogMessage()"
           type="danger"
           confirmText="Sil"
@@ -145,21 +130,18 @@ import { ADMIN_ROUTES } from '../../../shared/constants/routes.constants';
     </div>
   `,
 })
-export class CategoryListComponent implements OnInit {
-  private readonly categoryService = inject(CategoryService);
-
-  protected readonly newCategoryRoute = `${ADMIN_ROUTES.categories}/new`;
+export class TagListComponent implements OnInit {
+  private readonly tagService = inject(AdminTagService);
 
   // Table configuration
-  protected readonly columns: TableColumn<Category>[] = [
-    { key: 'name', label: 'Ad', sortable: true, width: '30%' },
-    { key: 'slug', label: 'Slug', sortable: true, width: '20%' },
-    { key: 'description', label: 'Açıklama', sortable: false, width: '35%' },
-    { key: 'articleCount', label: 'Makale Sayısı', sortable: true, width: '15%' },
+  protected readonly columns: TableColumn<Tag>[] = [
+    { key: 'name', label: 'Ad', sortable: true, width: '40%' },
+    { key: 'slug', label: 'Slug', sortable: true, width: '35%' },
+    { key: 'articleCount', label: 'Makale Sayısı', sortable: true, width: '25%' },
   ];
 
   // State signals
-  categories = signal<Category[]>([]);
+  tags = signal<Tag[]>([]);
   loading = signal(true);
   totalCount = signal(0);
   currentSort = signal<TableSort | null>(null);
@@ -168,68 +150,68 @@ export class CategoryListComponent implements OnInit {
   // Delete dialog
   showDeleteDialog = signal(false);
   deleteDialogMessage = signal('');
-  private categoryToDelete: Category | null = null;
+  private tagToDelete: Tag | null = null;
 
   constructor() {
-    this.categoryService.categories$.pipe(takeUntilDestroyed()).subscribe(categories => {
-      this.categories.set(categories);
+    this.tagService.tags$.pipe(takeUntilDestroyed()).subscribe(tags => {
+      this.tags.set(tags);
       this.loading.set(false);
     });
 
-    this.categoryService.totalCount$.pipe(takeUntilDestroyed()).subscribe(count => {
+    this.tagService.totalCount$.pipe(takeUntilDestroyed()).subscribe(count => {
       this.totalCount.set(count);
     });
 
-    this.categoryService.loading$.pipe(takeUntilDestroyed()).subscribe(loading => {
+    this.tagService.loading$.pipe(takeUntilDestroyed()).subscribe(loading => {
       this.loading.set(loading);
     });
   }
 
   ngOnInit(): void {
-    this.loadCategories();
+    this.loadTags();
   }
 
-  private loadCategories(): void {
-    this.categoryService.loadCategories({
+  private loadTags(): void {
+    this.tagService.loadTags({
       search: this.searchQuery,
     });
   }
 
   onSearchChange(): void {
-    this.loadCategories();
+    this.loadTags();
   }
 
   onSortChange(sort: TableSort): void {
     this.currentSort.set(sort);
-    this.loadCategories();
+    this.loadTags();
   }
 
-  editCategory(category: Category): void {
+  editTag(tag: Tag): void {
     // Navigate handled by routerLink
   }
 
-  confirmDelete(category: Category): void {
-    this.categoryToDelete = category;
+  confirmDelete(tag: Tag): void {
+    this.tagToDelete = tag;
     this.deleteDialogMessage.set(
-      `"${category.name}" kategorisini silmek istediğinizden emin misiniz? Bu kategoriye ait ${category.articleCount || 0} makale kategorisiz kalacaktır.`
+      `"${tag.name}" etiketini silmek istediğinizden emin misiniz? Bu etikete ait ${tag.articleCount || 0} makale etkilenecektir.`
     );
     this.showDeleteDialog.set(true);
   }
 
   handleDelete(): void {
-    if (this.categoryToDelete) {
-      this.categoryService.deleteCategory(this.categoryToDelete.id).subscribe({
+    if (this.tagToDelete) {
+      this.tagService.deleteTag(this.tagToDelete.id).subscribe({
         next: () => {
-          this.loadCategories();
+          this.loadTags();
         },
       });
     }
     this.showDeleteDialog.set(false);
-    this.categoryToDelete = null;
+    this.tagToDelete = null;
   }
 
   cancelDelete(): void {
     this.showDeleteDialog.set(false);
-    this.categoryToDelete = null;
+    this.tagToDelete = null;
   }
 }

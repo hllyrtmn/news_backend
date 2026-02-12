@@ -37,10 +37,9 @@ export class UserMapper {
    * @returns API request object
    */
   static toApiRequest(formData: UserFormData): Record<string, any> {
-    const request: Record<string, any> = {
+    let request: Record<string, any> = {
       username: formData.username,
       email: formData.email,
-      full_name: formData.fullName,
       first_name: formData.firstName,
       last_name: formData.lastName,
       bio: formData.bio,
@@ -50,7 +49,7 @@ export class UserMapper {
 
     // Only include password if provided (for updates)
     if (formData.password) {
-      request.password = formData.password;
+      request = { ...request, password: formData.password }
     }
 
     return request;
@@ -74,7 +73,6 @@ export class UserMapper {
     return {
       username: user.username,
       email: user.email,
-      fullName: user.fullName,
       firstName: user.firstName,
       lastName: user.lastName,
       bio: user.bio || undefined,

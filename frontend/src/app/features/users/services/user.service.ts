@@ -51,10 +51,10 @@ export class UserService {
       page_size: 20,
     };
 
-    if (params.search) queryParams.search = params.search;
-    if (params.role) queryParams.role = params.role;
-    if (params.isActive !== undefined) queryParams.is_active = params.isActive;
-    if (params.sort) queryParams.ordering = params.order === 'desc' ? `-${params.sort}` : params.sort;
+    if (params.search) queryParams['search'] = params.search;
+    if (params.role) queryParams['role'] = params.role;
+    if (params.isActive !== undefined) queryParams['is_active'] = params.isActive;
+    if (params.sort) queryParams['ordering'] = params.order === 'desc' ? `-${params.sort}` : params.sort;
 
     this.http
       .get<{ results: UserApiResponse[]; count: number }>(
@@ -83,6 +83,8 @@ export class UserService {
               fullName: 'Admin User',
               firstName: 'Admin',
               lastName: 'User',
+              avatar: null,
+              bio: null,
               role: 'admin',
               isActive: true,
               isStaff: true,
@@ -97,6 +99,8 @@ export class UserService {
               fullName: 'Ayşe Kaya',
               firstName: 'Ayşe',
               lastName: 'Kaya',
+              avatar: null,
+              bio: null,
               role: 'editor',
               isActive: true,
               isStaff: true,
@@ -111,6 +115,8 @@ export class UserService {
               fullName: 'Mehmet Demir',
               firstName: 'Mehmet',
               lastName: 'Demir',
+              avatar: null,
+              bio: null,
               role: 'author',
               isActive: true,
               isStaff: false,
@@ -125,6 +131,8 @@ export class UserService {
               fullName: 'Fatma Şahin',
               firstName: 'Fatma',
               lastName: 'Şahin',
+              avatar: null,
+              bio: null,
               role: 'user',
               isActive: false,
               isStaff: false,

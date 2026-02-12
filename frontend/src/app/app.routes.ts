@@ -284,96 +284,10 @@ export const routes: Routes = [
               ),
             title: 'Bekleyen Yorumlar',
           },
-          {
-            path: ':id',
-            loadComponent: () =>
-              import('./features/comments/comment-detail/comment-detail.component').then(
-                m => m.CommentDetailComponent
-              ),
-            title: 'Yorum Detay',
-          },
         ],
       },
 
-      // Analytics
-      {
-        path: 'analytics',
-        children: [
-          {
-            path: '',
-            redirectTo: 'dashboard',
-            pathMatch: 'full',
-          },
-          {
-            path: 'dashboard',
-            loadComponent: () =>
-              import('./features/analytics/analytics-dashboard/analytics-dashboard.component').then(
-                m => m.AnalyticsDashboardComponent
-              ),
-            title: 'Analitik',
-          },
-          {
-            path: 'traffic',
-            loadComponent: () =>
-              import('./features/analytics/traffic-analytics/traffic-analytics.component').then(
-                m => m.TrafficAnalyticsComponent
-              ),
-            title: 'Trafik Analizi',
-          },
-          {
-            path: 'engagement',
-            loadComponent: () =>
-              import('./features/analytics/engagement-analytics/engagement-analytics.component').then(
-                m => m.EngagementAnalyticsComponent
-              ),
-            title: 'Etkileşim Analizi',
-          },
-        ],
-      },
 
-      // Settings
-      {
-        path: 'settings',
-        children: [
-          {
-            path: '',
-            redirectTo: 'general',
-            pathMatch: 'full',
-          },
-          {
-            path: 'general',
-            loadComponent: () =>
-              import('./features/settings/general-settings/general-settings.component').then(
-                m => m.GeneralSettingsComponent
-              ),
-            title: 'Genel Ayarlar',
-          },
-          {
-            path: 'seo',
-            loadComponent: () =>
-              import('./features/settings/seo-settings/seo-settings.component').then(
-                m => m.SeoSettingsComponent
-              ),
-            title: 'SEO Ayarları',
-          },
-          {
-            path: 'social',
-            loadComponent: () =>
-              import('./features/settings/social-settings/social-settings.component').then(
-                m => m.SocialSettingsComponent
-              ),
-            title: 'Sosyal Medya',
-          },
-          {
-            path: 'notifications',
-            loadComponent: () =>
-              import('./features/settings/notification-settings/notification-settings.component').then(
-                m => m.NotificationSettingsComponent
-              ),
-            title: 'Bildirim Ayarları',
-          },
-        ],
-      },
     ],
   },
 

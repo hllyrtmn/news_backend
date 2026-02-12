@@ -31,12 +31,12 @@ export class ArticleMapper {
       },
       category: apiData.category
         ? {
-            id: apiData.category.id,
-            name: apiData.category.name,
-            slug: apiData.category.slug,
-            color: apiData.category.color,
-            icon: apiData.category.icon,
-          }
+          id: apiData.category.id,
+          name: apiData.category.name,
+          slug: apiData.category.slug,
+          color: apiData.category.color,
+          icon: apiData.category.icon,
+        }
         : null,
       tags: apiData.tags.map((tag) => ({
         id: tag.id,
@@ -67,9 +67,9 @@ export class ArticleMapper {
       excerpt: formData.excerpt || '',
       category: formData.categoryId,
       tags: formData.tagIds,
-      featured_image: formData.featuredImageId,
+      featured_image: formData.featuredImage,
       status: formData.status,
-      scheduled_at: formData.scheduledAt,
+      published_at: formData.publishedAt,
     };
   }
 

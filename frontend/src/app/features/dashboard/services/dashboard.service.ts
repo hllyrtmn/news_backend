@@ -15,6 +15,7 @@ import {
   RecentActivity,
   PopularArticle,
 } from '../types/dashboard.types';
+import { HttpParams } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root',
@@ -87,8 +88,10 @@ export class DashboardService {
    * Load recent activities
    */
   loadRecentActivities(limit: number = 10): void {
+    const httpParams = new HttpParams().set('limit', limit.toString());
+
     this.http
-      .get<any[]>(API_ENDPOINTS.dashboard.recentActivities, { limit })
+      .get<any[]>(API_ENDPOINTS.dashboard.recentActivities, { params: httpParams })
       .pipe(
         tap(response => {
           const activities: RecentActivity[] = response.map(item => ({
@@ -168,8 +171,10 @@ export class DashboardService {
    * Load popular articles
    */
   loadPopularArticles(limit: number = 5): void {
+    const params: HttpParams = new HttpParams().set('limit', limit.toString());
+
     this.http
-      .get<any[]>(API_ENDPOINTS.dashboard.popularArticles, { limit })
+      .get<any[]>(API_ENDPOINTS.dashboard.popularArticles, { params })
       .pipe(
         tap(response => {
           const articles: PopularArticle[] = response.map(item => ({
@@ -184,51 +189,6 @@ export class DashboardService {
         }),
         catchError(error => {
           console.error('Failed to load popular articles:', error);
-
-          // Return mock data for development
-          const mockArticles: PopularArticle[] = [
-            {
-              id: 1,
-              title: 'Angular 17 Signals: Kapsamlı Rehber',
-              author: 'Ahmet Yılmaz',
-              publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2),
-              views: 5432,
-              comments: 23,
-            },
-            {
-              id: 2,
-              title: 'TypeScript 5.0 ile Gelen Yenilikler',
-              author: 'Ayşe Kaya',
-              publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5),
-              views: 4321,
-              comments: 18,
-            },
-            {
-              id: 3,
-              title: 'Modern JavaScript: ES2024 Özellikleri',
-              author: 'Mehmet Demir',
-              publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7),
-              views: 3876,
-              comments: 15,
-            },
-            {
-              id: 4,
-              title: 'React Server Components Detaylı İnceleme',
-              author: 'Fatma Şahin',
-              publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10),
-              views: 3245,
-              comments: 12,
-            },
-            {
-              id: 5,
-              title: 'Vue 3 Composition API Best Practices',
-              author: 'Ali Özkan',
-              publishedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14),
-              views: 2987,
-              comments: 9,
-            },
-          ];
-          this.popularArticlesSubject.next(mockArticles);
           return of([]);
         })
       )
